@@ -1,49 +1,52 @@
 "use client";
 
 import type { Filters, ViewportStats } from "@/types";
-import { formatPricePerSqm } from "@/lib/formatters";
+import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
+
+interface TypeStat {
+  type: string;
+  count: number;
+  avgPpsm: number | null;
+  avgPrice: number;
+}
+
+// Types where avg total price makes more sense than price/m²
+const priceOnlyTypes = new Set(["garaz", "gospodarcza"]);
 
 interface FilterBarProps {
   filters: Filters;
   stats: ViewportStats | null;
+  typeStats: TypeStat[];
   loading: boolean;
   onFilterChange: (filters: Filters) => void;
+  onTypeClick?: (type: string) => void;
 }
 
-const propertyTypes = [
-  { value: null, label: "Wszystkie" },
-  { value: "apartment", label: "Mieszkania" },
-  { value: "house", label: "Domy" },
-  { value: "plot", label: "Dzialki" },
-  { value: "commercial", label: "Lokale" },
-];
+const typeColors: Record<string, string> = {
+  mieszkalna: "#2563eb",
+  garaz: "#6b7280",
+  uzytkowa: "#9333ea",
+  gospodarcza: "#d97706",
+};
+
+const typeLabels: Record<string, string> = {
+  mieszkalna: "Mieszkalna",
+  garaz: "Garaz",
+  uzytkowa: "Uzytkowa",
+  gospodarcza: "Gospodarcza",
+};
 
 export function FilterBar({
   filters,
   stats,
+  typeStats,
   loading,
   onFilterChange,
+  onTypeClick,
 }: FilterBarProps) {
   return (
     <div className="absolute top-4 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
-      {/* Property type tabs */}
-      <div className="flex gap-1">
-        {propertyTypes.map((pt) => (
-          <button
-            key={pt.value ?? "all"}
-            onClick={() =>
-              onFilterChange({ ...filters, propertyType: pt.value })
-            }
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filters.propertyType === pt.value
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {pt.label}
-          </button>
-        ))}
-      </div>
+      <span className="text-sm font-medium text-gray-700">Ceny transakcyjne</span>
 
       {/* Date range */}
       <div className="flex items-center gap-2 ml-auto">
@@ -73,15 +76,31 @@ export function FilterBar({
         />
       </div>
 
-      {/* Stats */}
-      {stats && stats.total_count > 0 && (
-        <div className="flex items-center gap-3 text-sm text-gray-600">
-          <span className="font-medium">{stats.total_count} transakcji</span>
-          {stats.avg_price_per_sqm && (
-            <span>
-              Srednia: {formatPricePerSqm(stats.avg_price_per_sqm)}
-            </span>
+      {/* Per-type stats */}
+      {typeStats.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {stats && (
+            <span className="text-xs text-gray-400">{stats.total_count} transakcji</span>
           )}
+          {typeStats.map((ts) => (
+            <span
+              key={ts.type}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: typeColors[ts.type] || "#6b7280" }}
+              onClick={() => onTypeClick?.(ts.type)}
+            >
+              {typeLabels[ts.type] || ts.type}: {ts.count}
+              {priceOnlyTypes.has(ts.type) ? (
+                <span className="opacity-80">
+                  — sr. {formatPLN(ts.avgPrice)}
+                </span>
+              ) : ts.avgPpsm != null ? (
+                <span className="opacity-80">
+                  — {formatPricePerSqm(ts.avgPpsm)}
+                </span>
+              ) : null}
+            </span>
+          ))}
         </div>
       )}
 

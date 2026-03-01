@@ -40,14 +40,16 @@ export function MapContainer({
         mapTypeControl={false}
         fullscreenControl={false}
         className="w-full h-full"
-        onBoundsChanged={(ev) => {
-          const b = ev.detail.bounds;
+        onIdle={(ev) => {
+          const b = ev.map.getBounds();
           if (b) {
+            const ne = b.getNorthEast();
+            const sw = b.getSouthWest();
             onBoundsChanged({
-              north: b.north,
-              south: b.south,
-              east: b.east,
-              west: b.west,
+              north: ne.lat(),
+              south: sw.lat(),
+              east: ne.lng(),
+              west: sw.lng(),
             });
           }
         }}

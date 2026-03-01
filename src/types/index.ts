@@ -11,6 +11,14 @@ export interface Transaction {
   address: string | null;
   lat: number;
   lng: number;
+  transaction_type: string | null;
+  seller_type: string | null;
+  buyer_type: string | null;
+  property_right: string | null;
+  share_fraction: string | null;
+  apartment_number: string | null;
+  function_type: string | null;
+  ancillary_area_sqm: number | null;
 }
 
 export interface ViewBounds {

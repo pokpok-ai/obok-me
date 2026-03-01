@@ -325,11 +325,50 @@ def process_dataframe(df: pd.DataFrame, property_type: str, teryt_filter: str = 
     if "teryt" in df.columns:
         df["powiat"] = df["teryt"]
 
+    # --- Extra fields ---
+    # Transaction type
+    if "tran_rodzaj_trans" in df.columns:
+        df["transaction_type"] = df["tran_rodzaj_trans"]
+    # Seller / buyer type
+    if "tran_sprzedajacy" in df.columns:
+        df["seller_type"] = df["tran_sprzedajacy"]
+    if "tran_kupujacy" in df.columns:
+        df["buyer_type"] = df["tran_kupujacy"]
+    # Property right (ownership type)
+    if "nier_prawo" in df.columns:
+        df["property_right"] = df["nier_prawo"]
+    # Share fraction
+    if "nier_udzial" in df.columns:
+        df["share_fraction"] = df["nier_udzial"]
+    # Land area
+    if "nier_pow_gruntu" in df.columns:
+        df["land_area_sqm"] = df["nier_pow_gruntu"]
+    # Apartment number
+    if "lok_nr_lokalu" in df.columns:
+        df["apartment_number"] = df["lok_nr_lokalu"]
+    # Function type (residential, commercial etc.)
+    if "lok_funkcja" in df.columns:
+        df["function_type"] = df["lok_funkcja"]
+    # Ancillary area (storage/basement)
+    if "lok_pow_przyn" in df.columns:
+        df["ancillary_area_sqm"] = df["lok_pow_przyn"]
+    # VAT amount
+    vat_cols = ["lok_vat", "tran_vat"]
+    df["vat_amount"] = None
+    for col in vat_cols:
+        if col in df.columns:
+            mask = df["vat_amount"].isna() & df[col].notna()
+            df.loc[mask, "vat_amount"] = df.loc[mask, col]
+
     # Select target columns
     target_cols = [
         "price", "price_per_sqm", "transaction_date", "property_type",
         "market_type", "area_sqm", "rooms", "floor", "address",
         "lat", "lng", "source_id", "powiat",
+        "transaction_type", "seller_type", "buyer_type",
+        "property_right", "share_fraction", "land_area_sqm",
+        "apartment_number", "function_type", "ancillary_area_sqm",
+        "vat_amount",
     ]
     result = df[[c for c in target_cols if c in df.columns]].copy()
 
