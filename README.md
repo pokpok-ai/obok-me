@@ -41,3 +41,11 @@ python import_rcn.py path/to/data.parquet
 - **WMS/WFS**: mapy.geoportal.gov.pl/wss/service/rcn
 - **Warsaw**: mapa.um.warszawa.pl/rcn-szukaj/
 - **dane.gov.pl**: developer disclosure data
+
+## License
+
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](LICENSE).
+
+Free to use, share, and adapt for non-commercial purposes with attribution.
+
+Copyright (c) 2026 Viktor Konovalov, pokpok.ai Co-Founder & CEO
