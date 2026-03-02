@@ -41,3 +41,61 @@ export interface ViewportStats {
   min_price: number | null;
   max_price: number | null;
 }
+
+// --- Correlation / Enrichment Types ---
+
+export interface PriceTrend {
+  month: string;
+  avg_price_per_sqm: number;
+  median_price_per_sqm: number;
+  transaction_count: number;
+  market_primary_avg: number | null;
+  market_secondary_avg: number | null;
+}
+
+export interface FloorAnalysis {
+  floor: number;
+  avg_price_per_sqm: number;
+  median_price_per_sqm: number;
+  transaction_count: number;
+}
+
+export interface RoomsAnalysis {
+  rooms: number;
+  avg_price_per_sqm: number;
+  avg_total_price: number;
+  avg_area: number;
+  transaction_count: number;
+}
+
+export interface AreaAnalysis {
+  area_bucket: string;
+  bucket_order: number;
+  avg_price_per_sqm: number;
+  avg_total_price: number;
+  transaction_count: number;
+}
+
+export interface VolumeTrend {
+  month: string;
+  transaction_count: number;
+  total_value: number;
+  avg_price: number;
+}
+
+export interface PartyAnalysis {
+  buyer_type: string | null;
+  seller_type: string | null;
+  avg_price_per_sqm: number | null;
+  avg_total_price: number;
+  transaction_count: number;
+}
+
+export interface InsightsData {
+  priceTrends: PriceTrend[];
+  floorAnalysis: FloorAnalysis[];
+  roomsAnalysis: RoomsAnalysis[];
+  areaAnalysis: AreaAnalysis[];
+  volumeTrends: VolumeTrend[];
+  partyAnalysis: PartyAnalysis[];
+}

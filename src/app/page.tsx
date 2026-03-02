@@ -5,7 +5,9 @@ import { MapContainer } from "@/components/MapContainer";
 import { TransactionMarkers } from "@/components/TransactionMarkers";
 import { FilterBar } from "@/components/FilterBar";
 import { LocateMe } from "@/components/LocateMe";
+import { InsightsPanel } from "@/components/InsightsPanel";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useInsights } from "@/hooks/useInsights";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
@@ -37,6 +39,13 @@ export default function HomePage() {
     debouncedBounds,
     stableFilters
   );
+
+  const {
+    insights,
+    loading: insightsLoading,
+    error: insightsError,
+    refresh: refreshInsights,
+  } = useInsights(debouncedBounds, stableFilters);
 
   const typeStats = useMemo(() => {
     const m = new Map<string, { count: number; sumPpsm: number; countPpsm: number; sumPrice: number }>();
@@ -107,6 +116,12 @@ export default function HomePage() {
         <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} />
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
+      <InsightsPanel
+        insights={insights}
+        loading={insightsLoading}
+        error={insightsError}
+        onRefresh={refreshInsights}
+      />
     </main>
   );
 }
