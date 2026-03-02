@@ -19,6 +19,10 @@ export interface Transaction {
   apartment_number: string | null;
   function_type: string | null;
   ancillary_area_sqm: number | null;
+  building_type: string | null;
+  zoning: string | null;
+  land_use: string | null;
+  additional_info: string | null;
 }
 
 export interface ViewBounds {

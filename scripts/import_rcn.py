@@ -180,16 +180,83 @@ def read_parquet_to_df(file_path: str) -> pd.DataFrame:
 
 
 def inspect_data(file_path: str) -> None:
-    """Print schema and sample data."""
+    """Print schema and sample data, highlighting columns we import vs skip."""
     pf = pq.ParquetFile(file_path)
     print(f"\n=== Schema ===")
     print(pf.schema_arrow)
     print(f"\nTotal rows: {pf.metadata.num_rows}")
 
+    # All columns we currently map in process_dataframe()
+    KNOWN_COLUMNS = {
+        # Price
+        "lok_cena_brutto", "bud_cena_brutto", "dzi_cena_brutto",
+        "nier_cena_brutto", "tran_cena_brutto",
+        # Area
+        "lok_pow_uzyt", "bud_pow_uzyt", "dzi_pow",
+        # Rooms
+        "lok_liczba_izb", "bud_liczba_izb",
+        # Floor
+        "lok_nr_kond",
+        # Address
+        "lok_adres", "bud_adres", "dzi_adres",
+        # Market type
+        "tran_rodzaj_rynku",
+        # Transaction metadata
+        "tran_rodzaj_trans", "tran_sprzedajacy", "tran_kupujacy",
+        "tran_lokalny_id_iip",
+        # Property rights
+        "nier_prawo", "nier_udzial", "nier_pow_gruntu",
+        # Apartment details
+        "lok_nr_lokalu", "lok_funkcja", "lok_pow_przyn",
+        # VAT
+        "lok_vat", "tran_vat",
+        # Building type, zoning, land use (§40 fields — NEW)
+        "bud_rodzaj", "dzi_przeznaczenie", "dzi_sposob_uzytkowania",
+        # Additional info (§40 — NEW)
+        "lok_dodatkowe_inf", "bud_dodatkowe_inf", "dzi_dodatkowe_inf",
+        # Deed reference (§40 — NEW)
+        "dok_nr",
+        # Internal/system
+        "dok_data", "teryt", "gid", "geometry", "geometry_bbox",
+    }
+
     # Read small sample
     table = pf.read_row_group(0)
     t = table.slice(0, 5)
-    print(f"\n=== First 5 rows ===")
+
+    imported = []
+    skipped = []
+    for col in t.column_names:
+        if col in KNOWN_COLUMNS:
+            imported.append(col)
+        else:
+            skipped.append(col)
+
+    print(f"\n=== Columns we IMPORT ({len(imported)}) ===")
+    for col in imported:
+        if col in ("geometry", "geometry_bbox"):
+            print(f"  {col}: [binary data]")
+        else:
+            try:
+                vals = t.column(col).to_pylist()[:3]
+                print(f"  {col}: {vals}")
+            except Exception as e:
+                print(f"  {col}: [error: {e}]")
+
+    if skipped:
+        print(f"\n=== Columns we SKIP ({len(skipped)}) — potential new data! ===")
+        for col in skipped:
+            try:
+                vals = t.column(col).to_pylist()[:3]
+                non_null = [v for v in t.column(col).to_pylist() if v is not None]
+                fill_rate = len(non_null) / len(t) * 100 if len(t) > 0 else 0
+                print(f"  {col}: {vals}  ({fill_rate:.0f}% fill)")
+            except Exception as e:
+                print(f"  {col}: [error: {e}]")
+    else:
+        print(f"\n  All columns are imported!")
+
+    print(f"\n=== First 5 rows (all columns) ===")
     for col in t.column_names:
         if col in ("geometry", "geometry_bbox"):
             print(f"  {col}: [binary data]")
@@ -360,6 +427,32 @@ def process_dataframe(df: pd.DataFrame, property_type: str, teryt_filter: str = 
             mask = df["vat_amount"].isna() & df[col].notna()
             df.loc[mask, "vat_amount"] = df.loc[mask, col]
 
+    # --- NEW §40 fields (previously skipped) ---
+
+    # Building type (§40 ust.5 pkt 3: rodzaj budynku)
+    if "bud_rodzaj" in df.columns:
+        df["building_type"] = df["bud_rodzaj"]
+
+    # Zoning designation (§40 ust.4 pkt 4: przeznaczenie w MPZP)
+    if "dzi_przeznaczenie" in df.columns:
+        df["zoning"] = df["dzi_przeznaczenie"]
+
+    # Land use type (§40 ust.4 pkt 5: sposób użytkowania)
+    if "dzi_sposob_uzytkowania" in df.columns:
+        df["land_use"] = df["dzi_sposob_uzytkowania"]
+
+    # Additional info — free-text with extra details (rok budowy, stan, etc.)
+    addinfo_cols = ["lok_dodatkowe_inf", "bud_dodatkowe_inf", "dzi_dodatkowe_inf"]
+    df["additional_info"] = None
+    for col in addinfo_cols:
+        if col in df.columns:
+            mask = df["additional_info"].isna() & df[col].notna()
+            df.loc[mask, "additional_info"] = df.loc[mask, col]
+
+    # Notary deed number (§40 ust.1 pkt 3)
+    if "dok_nr" in df.columns:
+        df["deed_number"] = df["dok_nr"]
+
     # Select target columns
     target_cols = [
         "price", "price_per_sqm", "transaction_date", "property_type",
@@ -369,6 +462,9 @@ def process_dataframe(df: pd.DataFrame, property_type: str, teryt_filter: str = 
         "property_right", "share_fraction", "land_area_sqm",
         "apartment_number", "function_type", "ancillary_area_sqm",
         "vat_amount",
+        # NEW: §40 fields
+        "building_type", "zoning", "land_use", "additional_info",
+        "deed_number",
     ]
     result = df[[c for c in target_cols if c in df.columns]].copy()
 

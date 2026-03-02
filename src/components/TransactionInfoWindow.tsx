@@ -106,6 +106,18 @@ export function TransactionInfoWindow({
               {partyLabels[t.seller_type] || t.seller_type} → {partyLabels[t.buyer_type] || t.buyer_type}
             </div>
           )}
+          {t.building_type && (
+            <div>Rodzaj budynku: {t.building_type}</div>
+          )}
+          {t.zoning && (
+            <div>MPZP: {t.zoning}</div>
+          )}
+          {t.land_use && (
+            <div>Uzytkowanie: {t.land_use}</div>
+          )}
+          {t.additional_info && (
+            <div className="italic">{t.additional_info}</div>
+          )}
         </div>
 
         <div className="mt-2 text-gray-400 text-xs">
