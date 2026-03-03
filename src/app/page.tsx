@@ -5,7 +5,7 @@ import { MapContainer } from "@/components/MapContainer";
 import { TransactionMarkers } from "@/components/TransactionMarkers";
 import { FilterBar } from "@/components/FilterBar";
 import { LocateMe } from "@/components/LocateMe";
-import { InsightsPanel } from "@/components/InsightsPanel";
+import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -124,11 +124,13 @@ export default function HomePage() {
           </div>
         </div>
       )}
-      <InsightsPanel
+      <AnalyticsSidebar
+        stats={stats}
         insights={insights}
         loading={insightsLoading}
         error={insightsError}
         onRefresh={refreshInsights}
+        transactionCount={transactions.length}
       />
     </main>
   );
