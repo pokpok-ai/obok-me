@@ -35,11 +35,12 @@ const typeLabels: Record<string, string> = {
   gospodarcza: "Gospodarcza",
 };
 
-const propertyTypeFilters = [
+const functionTypeFilters = [
   { value: null, label: "Wszystkie" },
-  { value: "apartment", label: "Mieszkania" },
-  { value: "house", label: "Domy" },
-  { value: "plot", label: "Dzialki" },
+  { value: "mieszkalna", label: "Mieszkalna" },
+  { value: "garaz", label: "Garaz" },
+  { value: "gospodarcza", label: "Gospodarcza" },
+  { value: "uzytkowa", label: "Uzytkowa" },
 ] as const;
 
 export function FilterBar({
@@ -54,19 +55,19 @@ export function FilterBar({
     <div className="absolute top-4 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
       <span className="text-sm font-medium text-gray-700">Ceny transakcyjne</span>
 
-      {/* Property type filter */}
+      {/* Function type filter (apartment sub-types) */}
       <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-        {propertyTypeFilters.map((pt) => (
+        {functionTypeFilters.map((ft) => (
           <button
-            key={pt.label}
-            onClick={() => onFilterChange({ ...filters, propertyType: pt.value })}
+            key={ft.label}
+            onClick={() => onFilterChange({ ...filters, functionType: ft.value })}
             className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              filters.propertyType === pt.value
+              filters.functionType === ft.value
                 ? "bg-white text-gray-800 shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            {pt.label}
+            {ft.label}
           </button>
         ))}
       </div>

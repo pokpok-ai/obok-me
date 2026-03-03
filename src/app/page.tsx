@@ -16,7 +16,7 @@ export default function HomePage() {
   const [filters, setFilters] = useState<Filters>({
     dateFrom: null,
     dateTo: null,
-    propertyType: null,
+    functionType: null,
   });
   const [mapCenter, setMapCenter] = useState<{
     lat: number;
@@ -28,9 +28,9 @@ export default function HomePage() {
     () => ({
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
-      propertyType: filters.propertyType,
+      functionType: filters.functionType,
     }),
-    [filters.dateFrom, filters.dateTo, filters.propertyType]
+    [filters.dateFrom, filters.dateTo, filters.functionType]
   );
 
   const debouncedBounds = useDebounce(bounds, 400);

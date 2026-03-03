@@ -35,7 +35,7 @@ export interface ViewBounds {
 export interface Filters {
   dateFrom: string | null;
   dateTo: string | null;
-  propertyType: string | null;
+  functionType: string | null;
 }
 
 export interface ViewportStats {

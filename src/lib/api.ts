@@ -25,7 +25,7 @@ export async function fetchTransactions(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
-    prop_type: filters.propertyType || null,
+    func_type: filters.functionType || null,
     max_results: 500,
   });
 
@@ -44,6 +44,7 @@ export async function fetchViewportStats(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -63,7 +64,7 @@ export async function fetchPriceTrends(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
-    prop_type: filters.propertyType || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -81,6 +82,7 @@ export async function fetchFloorAnalysis(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -98,6 +100,7 @@ export async function fetchRoomsAnalysis(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -115,6 +118,7 @@ export async function fetchAreaAnalysis(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -130,7 +134,7 @@ export async function fetchVolumeTrends(
     min_lng: bounds.west,
     max_lat: bounds.north,
     max_lng: bounds.east,
-    prop_type: filters.propertyType || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -148,6 +152,7 @@ export async function fetchPartyAnalysis(
     max_lng: bounds.east,
     date_from: filters.dateFrom || null,
     date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) throw error;
@@ -163,7 +168,7 @@ export async function fetchYoYChange(
     min_lng: bounds.west,
     max_lat: bounds.north,
     max_lng: bounds.east,
-    prop_type: filters.propertyType || null,
+    func_type: filters.functionType || null,
   });
 
   if (error) {

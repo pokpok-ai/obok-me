@@ -52,6 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_type
 
 -- =============================================================
 -- RPC: Get transactions within map viewport
+-- Hardcoded to apartments only; supports function_type sub-filter
 -- =============================================================
 CREATE OR REPLACE FUNCTION transactions_in_view(
   min_lat FLOAT,
@@ -60,7 +61,7 @@ CREATE OR REPLACE FUNCTION transactions_in_view(
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
   date_to DATE DEFAULT NULL,
-  prop_type TEXT DEFAULT NULL,
+  func_type TEXT DEFAULT NULL,
   max_results INTEGER DEFAULT 500
 )
 RETURNS TABLE (
@@ -75,24 +76,37 @@ RETURNS TABLE (
   floor INTEGER,
   address TEXT,
   lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION
+  lng DOUBLE PRECISION,
+  transaction_type TEXT,
+  seller_type TEXT,
+  buyer_type TEXT,
+  property_right TEXT,
+  share_fraction TEXT,
+  apartment_number TEXT,
+  function_type TEXT,
+  ancillary_area_sqm NUMERIC,
+  building_type TEXT,
+  zoning TEXT,
+  land_use TEXT,
+  additional_info TEXT
 )
 LANGUAGE SQL STABLE
 AS $$
   SELECT
     t.id, t.price, t.price_per_sqm, t.transaction_date,
     t.property_type, t.market_type, t.area_sqm, t.rooms,
-    t.floor, t.address, t.lat, t.lng
+    t.floor, t.address, t.lat, t.lng,
+    t.transaction_type, t.seller_type, t.buyer_type,
+    t.property_right, t.share_fraction,
+    t.apartment_number, t.function_type, t.ancillary_area_sqm,
+    t.building_type, t.zoning, t.land_use, t.additional_info
   FROM transactions t
-  WHERE t.location && ST_SetSRID(
-    ST_MakeBox2D(
-      ST_Point(min_lng, min_lat),
-      ST_Point(max_lng, max_lat)
-    ), 4326
-  )::geography
-  AND (date_from IS NULL OR t.transaction_date >= date_from)
-  AND (date_to IS NULL OR t.transaction_date <= date_to)
-  AND (prop_type IS NULL OR t.property_type = prop_type)
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
   ORDER BY t.transaction_date DESC
   LIMIT max_results;
 $$;
@@ -100,6 +114,7 @@ $$;
 
 -- =============================================================
 -- RPC: Get aggregate stats for current viewport
+-- Hardcoded to apartments only; supports function_type sub-filter
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_stats(
   min_lat FLOAT,
@@ -107,7 +122,8 @@ CREATE OR REPLACE FUNCTION viewport_stats(
   max_lat FLOAT,
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
-  date_to DATE DEFAULT NULL
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   total_count BIGINT,
@@ -125,15 +141,13 @@ AS $$
     MIN(t.price),
     MAX(t.price)
   FROM transactions t
-  WHERE t.location && ST_SetSRID(
-    ST_MakeBox2D(
-      ST_Point(min_lng, min_lat),
-      ST_Point(max_lng, max_lat)
-    ), 4326
-  )::geography
-  AND (date_from IS NULL OR t.transaction_date >= date_from)
-  AND (date_to IS NULL OR t.transaction_date <= date_to)
-  AND t.price_per_sqm IS NOT NULL;
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
+    AND t.price_per_sqm IS NOT NULL;
 $$;
 
 

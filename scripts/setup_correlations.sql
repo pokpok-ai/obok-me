@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION viewport_price_trends(
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
   date_to DATE DEFAULT NULL,
-  prop_type TEXT DEFAULT NULL
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   month TEXT,
@@ -34,11 +34,12 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND t.price_per_sqm IS NOT NULL
     AND t.transaction_date IS NOT NULL
     AND (date_from IS NULL OR t.transaction_date >= date_from)
     AND (date_to IS NULL OR t.transaction_date <= date_to)
-    AND (prop_type IS NULL OR t.property_type = prop_type)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY DATE_TRUNC('month', t.transaction_date)
   ORDER BY DATE_TRUNC('month', t.transaction_date);
 $$;
@@ -54,7 +55,8 @@ CREATE OR REPLACE FUNCTION viewport_floor_analysis(
   max_lat FLOAT,
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
-  date_to DATE DEFAULT NULL
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   floor INTEGER,
@@ -72,11 +74,12 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND t.price_per_sqm IS NOT NULL
     AND t.floor IS NOT NULL
-    AND t.property_type = 'apartment'
     AND (date_from IS NULL OR t.transaction_date >= date_from)
     AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY t.floor
   HAVING COUNT(*) >= 3
   ORDER BY t.floor;
@@ -93,7 +96,8 @@ CREATE OR REPLACE FUNCTION viewport_rooms_analysis(
   max_lat FLOAT,
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
-  date_to DATE DEFAULT NULL
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   rooms INTEGER,
@@ -113,12 +117,13 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND t.price_per_sqm IS NOT NULL
     AND t.rooms IS NOT NULL
     AND t.rooms BETWEEN 1 AND 6
-    AND t.property_type = 'apartment'
     AND (date_from IS NULL OR t.transaction_date >= date_from)
     AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY t.rooms
   HAVING COUNT(*) >= 3
   ORDER BY t.rooms;
@@ -134,7 +139,8 @@ CREATE OR REPLACE FUNCTION viewport_area_analysis(
   max_lat FLOAT,
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
-  date_to DATE DEFAULT NULL
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   area_bucket TEXT,
@@ -166,11 +172,12 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND t.price_per_sqm IS NOT NULL
     AND t.area_sqm IS NOT NULL
-    AND t.property_type = 'apartment'
     AND (date_from IS NULL OR t.transaction_date >= date_from)
     AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY area_bucket, bucket_order
   HAVING COUNT(*) >= 3
   ORDER BY bucket_order;
@@ -185,7 +192,7 @@ CREATE OR REPLACE FUNCTION viewport_volume_trends(
   min_lng FLOAT,
   max_lat FLOAT,
   max_lng FLOAT,
-  prop_type TEXT DEFAULT NULL
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   month TEXT,
@@ -203,8 +210,9 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND t.transaction_date IS NOT NULL
-    AND (prop_type IS NULL OR t.property_type = prop_type)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY DATE_TRUNC('month', t.transaction_date)
   ORDER BY DATE_TRUNC('month', t.transaction_date);
 $$;
@@ -219,7 +227,8 @@ CREATE OR REPLACE FUNCTION viewport_party_analysis(
   max_lat FLOAT,
   max_lng FLOAT,
   date_from DATE DEFAULT NULL,
-  date_to DATE DEFAULT NULL
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   buyer_type TEXT,
@@ -239,9 +248,11 @@ AS $$
   FROM transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
     AND (t.buyer_type IS NOT NULL OR t.seller_type IS NOT NULL)
     AND (date_from IS NULL OR t.transaction_date >= date_from)
     AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
   GROUP BY t.buyer_type, t.seller_type
   HAVING COUNT(*) >= 2
   ORDER BY COUNT(*) DESC
@@ -258,7 +269,7 @@ CREATE OR REPLACE FUNCTION viewport_yoy_change(
   min_lng FLOAT,
   max_lat FLOAT,
   max_lng FLOAT,
-  prop_type TEXT DEFAULT NULL
+  func_type TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   current_avg NUMERIC,
@@ -283,9 +294,10 @@ AS $$
     FROM transactions t, bounds b
     WHERE t.lat BETWEEN min_lat AND max_lat
       AND t.lng BETWEEN min_lng AND max_lng
+      AND t.property_type = 'apartment'
       AND t.price_per_sqm IS NOT NULL
       AND t.transaction_date BETWEEN b.current_start AND b.current_end
-      AND (prop_type IS NULL OR t.property_type = prop_type)
+      AND (func_type IS NULL OR t.function_type = func_type)
   ),
   previous_period AS (
     SELECT
@@ -294,9 +306,10 @@ AS $$
     FROM transactions t, bounds b
     WHERE t.lat BETWEEN min_lat AND max_lat
       AND t.lng BETWEEN min_lng AND max_lng
+      AND t.property_type = 'apartment'
       AND t.price_per_sqm IS NOT NULL
       AND t.transaction_date BETWEEN b.previous_start AND b.previous_end
-      AND (prop_type IS NULL OR t.property_type = prop_type)
+      AND (func_type IS NULL OR t.function_type = func_type)
   )
   SELECT
     c.avg_ppsm AS current_avg,
