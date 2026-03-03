@@ -10,6 +10,15 @@ const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "";
 const DEFAULT_CENTER = { lat: 52.23, lng: 21.01 };
 const DEFAULT_ZOOM = 12;
 
+// Warsaw + surroundings bounds (restrict pan/zoom)
+const WARSAW_BOUNDS = {
+  north: 52.45,
+  south: 52.05,
+  east: 21.35,
+  west: 20.75,
+};
+const MIN_ZOOM = 10; // prevent zooming out beyond Warsaw metro area
+
 interface MapContainerProps {
   onBoundsChanged: (bounds: {
     north: number;
@@ -39,6 +48,11 @@ export function MapContainer({
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
+        minZoom={MIN_ZOOM}
+        restriction={{
+          latLngBounds: WARSAW_BOUNDS,
+          strictBounds: false,
+        }}
         className="w-full h-full"
         onIdle={(ev) => {
           const b = ev.map.getBounds();

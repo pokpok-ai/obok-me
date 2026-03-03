@@ -10,7 +10,7 @@ interface TypeStat {
   avgPrice: number;
 }
 
-const priceOnlyTypes = new Set(["garaz", "gospodarcza"]);
+const priceOnlyTypes = new Set(["garaz"]);
 
 interface FilterBarProps {
   filters: Filters;
@@ -24,23 +24,27 @@ interface FilterBarProps {
 const typeColors: Record<string, string> = {
   mieszkalna: "#2563eb",
   garaz: "#6b7280",
-  uzytkowa: "#9333ea",
-  gospodarcza: "#d97706",
+  inne: "#d97706",
+  handlowoUslugowa: "#9333ea",
+  biurowa: "#0891b2",
+  produkcyjna: "#dc2626",
 };
 
 const typeLabels: Record<string, string> = {
   mieszkalna: "Mieszkalna",
   garaz: "Garaz",
-  uzytkowa: "Uzytkowa",
-  gospodarcza: "Gospodarcza",
+  inne: "Inne",
+  handlowoUslugowa: "Handlowo-uslugowa",
+  biurowa: "Biurowa",
+  produkcyjna: "Produkcyjna",
 };
 
 const functionTypeFilters = [
   { value: null, label: "Wszystkie" },
   { value: "mieszkalna", label: "Mieszkalna" },
   { value: "garaz", label: "Garaz" },
-  { value: "gospodarcza", label: "Gospodarcza" },
-  { value: "uzytkowa", label: "Uzytkowa" },
+  { value: "handlowoUslugowa", label: "Handlowo-usl." },
+  { value: "inne", label: "Inne" },
 ] as const;
 
 export function FilterBar({

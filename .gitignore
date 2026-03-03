@@ -38,6 +38,7 @@ yarn-error.log*
 *.parquet
 *.gpkg
 *.gml
+scripts/backfill_*.sql
 
 # python
 __pycache__/
