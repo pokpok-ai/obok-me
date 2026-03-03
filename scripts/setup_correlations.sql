@@ -250,6 +250,65 @@ $$;
 
 
 -- =============================================================
+-- RPC: Year-over-year price change for viewport
+-- Compares last 12 months avg to previous 12 months avg
+-- =============================================================
+CREATE OR REPLACE FUNCTION viewport_yoy_change(
+  min_lat FLOAT,
+  min_lng FLOAT,
+  max_lat FLOAT,
+  max_lng FLOAT,
+  prop_type TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  current_avg NUMERIC,
+  previous_avg NUMERIC,
+  pct_change NUMERIC,
+  current_count BIGINT,
+  previous_count BIGINT
+)
+LANGUAGE SQL STABLE
+AS $$
+  WITH bounds AS (
+    SELECT
+      CURRENT_DATE - INTERVAL '12 months' AS current_start,
+      CURRENT_DATE AS current_end,
+      CURRENT_DATE - INTERVAL '24 months' AS previous_start,
+      CURRENT_DATE - INTERVAL '12 months' AS previous_end
+  ),
+  current_period AS (
+    SELECT
+      ROUND(AVG(t.price_per_sqm)::NUMERIC, 0) AS avg_ppsm,
+      COUNT(*)::BIGINT AS cnt
+    FROM transactions t, bounds b
+    WHERE t.lat BETWEEN min_lat AND max_lat
+      AND t.lng BETWEEN min_lng AND max_lng
+      AND t.price_per_sqm IS NOT NULL
+      AND t.transaction_date BETWEEN b.current_start AND b.current_end
+      AND (prop_type IS NULL OR t.property_type = prop_type)
+  ),
+  previous_period AS (
+    SELECT
+      ROUND(AVG(t.price_per_sqm)::NUMERIC, 0) AS avg_ppsm,
+      COUNT(*)::BIGINT AS cnt
+    FROM transactions t, bounds b
+    WHERE t.lat BETWEEN min_lat AND max_lat
+      AND t.lng BETWEEN min_lng AND max_lng
+      AND t.price_per_sqm IS NOT NULL
+      AND t.transaction_date BETWEEN b.previous_start AND b.previous_end
+      AND (prop_type IS NULL OR t.property_type = prop_type)
+  )
+  SELECT
+    c.avg_ppsm AS current_avg,
+    p.avg_ppsm AS previous_avg,
+    CASE WHEN p.avg_ppsm > 0 THEN ROUND(((c.avg_ppsm - p.avg_ppsm) / p.avg_ppsm * 100)::NUMERIC, 1) ELSE NULL END AS pct_change,
+    c.cnt AS current_count,
+    p.cnt AS previous_count
+  FROM current_period c, previous_period p;
+$$;
+
+
+-- =============================================================
 -- Indexes to support correlation queries efficiently
 -- =============================================================
 CREATE INDEX IF NOT EXISTS idx_transactions_lat_lng

@@ -95,6 +95,14 @@ export interface PartyAnalysis {
   transaction_count: number;
 }
 
+export interface YoYChange {
+  current_avg: number | null;
+  previous_avg: number | null;
+  pct_change: number | null;
+  current_count: number;
+  previous_count: number;
+}
+
 export interface InsightsData {
   priceTrends: PriceTrend[];
   floorAnalysis: FloorAnalysis[];
@@ -102,4 +110,5 @@ export interface InsightsData {
   areaAnalysis: AreaAnalysis[];
   volumeTrends: VolumeTrend[];
   partyAnalysis: PartyAnalysis[];
+  yoyChange: YoYChange | null;
 }

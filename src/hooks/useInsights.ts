@@ -9,6 +9,7 @@ const EMPTY_INSIGHTS: InsightsData = {
   areaAnalysis: [],
   volumeTrends: [],
   partyAnalysis: [],
+  yoyChange: null,
 };
 
 export function useInsights(bounds: ViewBounds | null, filters: Filters) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ViewportStats, InsightsData } from "@/types";
+import type { ViewportStats, InsightsData, YoYChange } from "@/types";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
 import { PriceTrendChart } from "./PriceTrendChart";
 
@@ -43,29 +43,54 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
   );
 }
 
-function ViewportSummary({ stats, transactionCount }: { stats: ViewportStats | null; transactionCount: number }) {
+function YoYBadge({ yoy }: { yoy: YoYChange | null }) {
+  if (!yoy || yoy.pct_change === null) return null;
+  const up = yoy.pct_change > 0;
+  const color = up ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50";
+  const arrow = up ? "\u2191" : "\u2193";
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${color}`}>
+      {arrow} {Math.abs(yoy.pct_change)}% r/r
+    </span>
+  );
+}
+
+function ViewportSummary({ stats, transactionCount, yoy }: { stats: ViewportStats | null; transactionCount: number; yoy: YoYChange | null }) {
   if (!stats) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <StatCard
-        label="Transakcje"
-        value={formatCompact(stats.total_count)}
-        sub={`${transactionCount} na mapie`}
-        color="#1e40af"
-      />
-      <StatCard
-        label="Sr. cena/m²"
-        value={stats.avg_price_per_sqm ? `${formatCompact(stats.avg_price_per_sqm)}` : "—"}
-        sub="zl/m²"
-        color="#059669"
-      />
-      <StatCard
-        label="Mediana/m²"
-        value={stats.median_price_per_sqm ? `${formatCompact(stats.median_price_per_sqm)}` : "—"}
-        sub="zl/m²"
-        color="#7c3aed"
-      />
+    <div>
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard
+          label="Transakcje"
+          value={formatCompact(stats.total_count)}
+          sub={`${transactionCount} na mapie`}
+          color="#1e40af"
+        />
+        <StatCard
+          label="Sr. cena/m²"
+          value={stats.avg_price_per_sqm ? `${formatCompact(stats.avg_price_per_sqm)}` : "—"}
+          sub="zl/m²"
+          color="#059669"
+        />
+        <StatCard
+          label="Mediana/m²"
+          value={stats.median_price_per_sqm ? `${formatCompact(stats.median_price_per_sqm)}` : "—"}
+          sub="zl/m²"
+          color="#7c3aed"
+        />
+      </div>
+      {yoy && yoy.pct_change !== null && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+          <span>Zmiana rok do roku:</span>
+          <YoYBadge yoy={yoy} />
+          {yoy.current_avg && yoy.previous_avg && (
+            <span className="text-gray-400">
+              ({formatPricePerSqm(yoy.previous_avg)} → {formatPricePerSqm(yoy.current_avg)})
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -327,7 +352,7 @@ export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, t
 
           {/* Viewport Summary */}
           <div className="px-4 py-3">
-            <ViewportSummary stats={stats} transactionCount={transactionCount} />
+            <ViewportSummary stats={stats} transactionCount={transactionCount} yoy={insights.yoyChange} />
           </div>
 
           {/* Price Trend Chart */}

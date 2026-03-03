@@ -10,6 +10,7 @@ import type {
   AreaAnalysis,
   VolumeTrend,
   PartyAnalysis,
+  YoYChange,
   InsightsData,
 } from "@/types";
 
@@ -153,6 +154,25 @@ export async function fetchPartyAnalysis(
   return (data as PartyAnalysis[]) || [];
 }
 
+export async function fetchYoYChange(
+  bounds: ViewBounds,
+  filters: Filters
+): Promise<YoYChange | null> {
+  const { data, error } = await getSupabase().rpc("viewport_yoy_change", {
+    min_lat: bounds.south,
+    min_lng: bounds.west,
+    max_lat: bounds.north,
+    max_lng: bounds.east,
+    prop_type: filters.propertyType || null,
+  });
+
+  if (error) {
+    console.warn("YoY change function not available:", error.message);
+    return null;
+  }
+  return (data as YoYChange[])?.[0] || null;
+}
+
 export async function fetchAllInsights(
   bounds: ViewBounds,
   filters: Filters
@@ -164,6 +184,7 @@ export async function fetchAllInsights(
     areaAnalysis,
     volumeTrends,
     partyAnalysis,
+    yoyChange,
   ] = await Promise.all([
     fetchPriceTrends(bounds, filters),
     fetchFloorAnalysis(bounds, filters),
@@ -171,6 +192,7 @@ export async function fetchAllInsights(
     fetchAreaAnalysis(bounds, filters),
     fetchVolumeTrends(bounds, filters),
     fetchPartyAnalysis(bounds, filters),
+    fetchYoYChange(bounds, filters),
   ]);
 
   return {
@@ -180,5 +202,6 @@ export async function fetchAllInsights(
     areaAnalysis,
     volumeTrends,
     partyAnalysis,
+    yoyChange,
   };
 }
