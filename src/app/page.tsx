@@ -113,7 +113,7 @@ export default function HomePage() {
         onTypeClick={handleTypeClick}
       />
       <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter}>
-        <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} />
+        <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} />
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
       {loading && transactions.length === 0 && (

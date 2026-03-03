@@ -10,9 +10,10 @@ interface TransactionMarkersProps {
   transactions: Transaction[];
   focusedTransaction?: Transaction | null;
   onFocusConsumed?: () => void;
+  avgPricePerSqm?: number | null;
 }
 
-export function TransactionMarkers({ transactions, focusedTransaction, onFocusConsumed }: TransactionMarkersProps) {
+export function TransactionMarkers({ transactions, focusedTransaction, onFocusConsumed, avgPricePerSqm }: TransactionMarkersProps) {
   const map = useMap();
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
@@ -99,7 +100,7 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
                   <div key={type} className="flex flex-col items-center gap-0.5">
                     {items.map((t) => (
                       <div key={t.id} onClick={(e) => { e.stopPropagation(); setSelected(t); }}>
-                        <PricePin price={t.price} type={type} />
+                        <PricePin price={t.price} pricePerSqm={t.price_per_sqm} type={type} avgPricePerSqm={avgPricePerSqm} />
                       </div>
                     ))}
                   </div>
@@ -125,7 +126,7 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
                       }
                     }}
                   >
-                    <PricePin count={items.length} type={type} />
+                    <PricePin count={items.length} type={type} avgPricePerSqm={avgPricePerSqm} />
                   </div>
                 ))}
               </div>
@@ -143,8 +144,24 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
   );
 }
 
-function PricePin({ price, type, count }: { price?: number; type: string; count?: number }) {
-  const colors: Record<string, string> = {
+function getPriceColor(pricePerSqm: number | null | undefined, avg: number | null | undefined): string {
+  if (!pricePerSqm || !avg || avg === 0) return "#6b7280"; // gray fallback
+  const ratio = pricePerSqm / avg;
+  if (ratio <= 0.7) return "#16a34a";  // green — very cheap
+  if (ratio <= 0.9) return "#65a30d";  // lime — below avg
+  if (ratio <= 1.1) return "#3b82f6";  // blue — around avg
+  if (ratio <= 1.3) return "#f59e0b";  // amber — above avg
+  return "#dc2626";                     // red — expensive
+}
+
+function PricePin({ price, pricePerSqm, type, count, avgPricePerSqm }: {
+  price?: number;
+  pricePerSqm?: number | null;
+  type: string;
+  count?: number;
+  avgPricePerSqm?: number | null;
+}) {
+  const typeColors: Record<string, string> = {
     mieszkalna: "#2563eb",
     garaz: "#6b7280",
     uzytkowa: "#9333ea",
@@ -154,7 +171,11 @@ function PricePin({ price, type, count }: { price?: number; type: string; count?
     plot: "#d97706",
     commercial: "#9333ea",
   };
-  const bg = colors[type] || "#2563eb";
+
+  // Use price-relative coloring when we have per-sqm data, otherwise fall back to type
+  const bg = (pricePerSqm && avgPricePerSqm)
+    ? getPriceColor(pricePerSqm, avgPricePerSqm)
+    : typeColors[type] || "#2563eb";
 
   let label: string;
   if (count != null) {
