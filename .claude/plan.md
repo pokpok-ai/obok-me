@@ -39,23 +39,34 @@
 ## Phase 2 — Core Analytics (NEXT)
 
 **RULE: Keep ALL existing ANALIZA functionality. Only ADD new features on top.**
+**Reference: `.claude/zipsmart-analysis.md` for ZipSmart feature parity targets.**
 
 ### 2.1 Price Heatmap Layer
 - NEW: `src/components/HeatmapLayer.tsx`
 - Google Maps `google.maps.visualization.HeatmapLayer`
 - Weight points by price_per_sqm, color: green (cheap) → red (expensive)
-- Toggle button on map UI
+- Toggle button on map UI (bottom-left, near LocateMe)
 - Modify: `src/app/page.tsx` — heatmap toggle state
+- NEW SQL: `heatmap_points()` — returns lat/lng/price_per_sqm with higher limit (~5000) for density
+- Needs: `libraries=["visualization"]` in Google Maps APIProvider
 
 ### 2.2 Simple Price Forecast
 - NEW: `src/lib/forecast.ts` — linear regression on monthly price trends
-- Project 3-5 months forward as dashed line on PriceTrendChart
+- Project 5 months forward as dashed line on PriceTrendChart (matches ZipSmart's 5-month horizon)
 - Modify: `src/components/PriceTrendChart.tsx` — forecast extension
+- Data source: existing `PriceTrend[]` from `viewport_price_trends()` — has monthly avg_price_per_sqm
 
-### 2.3 Enhanced Analytics Sidebar
-- District comparison: avg price/m² current viewport vs Warsaw overall
-- Volume sparkline in summary section
-- Price distribution histogram
+### 2.3 Market Categorization (NEW — inspired by ZipSmart)
+- Classify viewport as: Rynek kupujacego / Rynek sprzedajacego / Rynek zrownowazony
+- Compute from: volume trend (rising/falling) + price trend (rising/falling) + YoY change
+- Display as badge/indicator in ViewportSummary section
+- No new SQL needed — derive from existing priceTrends + volumeTrends + yoyChange
+
+### 2.4 Enhanced Analytics Sidebar
+- **Viewport vs Warsaw-wide comparison**: avg price/m² in viewport vs all-Warsaw average
+  - NEW SQL: `warsaw_wide_stats()` — returns city-wide avg/median price_per_sqm (no viewport filter)
+- Volume sparkline in summary section (mini chart from existing VolumeTrend data)
+- Price distribution histogram (buckets from raw transaction prices in viewport)
 - **Keep all existing tabs**: Price Trends, Floor, Rooms, Area, Volume, Parties, YoY badge
 
 ---
