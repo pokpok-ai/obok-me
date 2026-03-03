@@ -54,6 +54,10 @@ CREATE INDEX IF NOT EXISTS idx_transactions_type
 -- RPC: Get transactions within map viewport
 -- Hardcoded to apartments only; supports function_type sub-filter
 -- =============================================================
+-- Drop old versions (return type changed — CREATE OR REPLACE can't handle that)
+DROP FUNCTION IF EXISTS transactions_in_view(double precision, double precision, double precision, double precision, date, date, text, integer);
+DROP FUNCTION IF EXISTS transactions_in_view(float, float, float, float, date, date, text, integer);
+
 CREATE OR REPLACE FUNCTION transactions_in_view(
   min_lat FLOAT,
   min_lng FLOAT,
@@ -116,6 +120,10 @@ $$;
 -- RPC: Get aggregate stats for current viewport
 -- Hardcoded to apartments only; supports function_type sub-filter
 -- =============================================================
+-- Drop old versions (signature changed — added func_type param)
+DROP FUNCTION IF EXISTS viewport_stats(double precision, double precision, double precision, double precision, date, date);
+DROP FUNCTION IF EXISTS viewport_stats(float, float, float, float, date, date);
+
 CREATE OR REPLACE FUNCTION viewport_stats(
   min_lat FLOAT,
   min_lng FLOAT,

@@ -1,6 +1,15 @@
 -- obok.me — Correlation & Enrichment SQL Functions
 -- Run this in Supabase SQL Editor after setup_db.sql
 
+-- Drop old function signatures (changed params — added func_type)
+DROP FUNCTION IF EXISTS viewport_price_trends(float,float,float,float,date,date,text);
+DROP FUNCTION IF EXISTS viewport_floor_analysis(float,float,float,float,date,date);
+DROP FUNCTION IF EXISTS viewport_rooms_analysis(float,float,float,float,date,date);
+DROP FUNCTION IF EXISTS viewport_area_analysis(float,float,float,float,date,date);
+DROP FUNCTION IF EXISTS viewport_volume_trends(float,float,float,float,text);
+DROP FUNCTION IF EXISTS viewport_party_analysis(float,float,float,float,date,date);
+DROP FUNCTION IF EXISTS viewport_yoy_change(float,float,float,float,text);
+
 -- =============================================================
 -- RPC: Monthly price trends for current viewport
 -- Returns avg/median price per m² by month, split by market type
