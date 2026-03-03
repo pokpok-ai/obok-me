@@ -76,9 +76,11 @@
 ### 3.1 GUS BDL Demographics (FREE API)
 - URL: https://api.stat.gov.pl/Home/BdlApi (REST, JSON, no auth)
 - NEW: `src/lib/gus-api.ts`
-- NEW: `src/components/DemographicsCard.tsx`
-- Data: population, avg salary, unemployment by Warsaw district
-- Calculate: price-to-income ratio
+- NEW: `src/components/DemographicsGrid.tsx` — 3x2 stat card grid (ZipSmart "Market Conditions" style)
+- Cards: Populacja | Sr. wynagrodzenie | Bezrobocie % | Wyksztalcenie wyzsze % | Gestosc zaludnienia | Cena/dochod
+- Each card: large colored value + label + info tooltip
+- Color coding: green (good) / yellow (neutral) / orange (warning)
+- Calculate: price-to-income ratio (RCN avg price / GUS avg salary)
 
 ### 3.2 NBP Interest Rates (FREE API)
 - NEW: `src/lib/nbp-api.ts`
