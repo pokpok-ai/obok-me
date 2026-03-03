@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ViewportStats, InsightsData, YoYChange } from "@/types";
+import type { ViewportStats, WarsawStats, InsightsData, VolumeTrend } from "@/types";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
 import { PriceTrendChart } from "./PriceTrendChart";
+import { MarketGauge } from "./MarketGauge";
 
 interface AnalyticsSidebarProps {
   stats: ViewportStats | null;
+  warsawStats: WarsawStats | null;
   insights: InsightsData;
   loading: boolean;
   error: string | null;
@@ -14,12 +16,21 @@ interface AnalyticsSidebarProps {
   transactionCount: number;
 }
 
-type Section = "trends" | "floor" | "rooms" | "area" | "volume" | "parties";
+type Section = "floor" | "rooms" | "area" | "volume" | "parties";
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
   return n.toString();
+}
+
+// --- Card wrapper ---
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-2xl bg-white shadow-sm border border-gray-100 p-5 ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 // --- Sub-components ---
@@ -33,65 +44,175 @@ function MiniBar({ value, max, color = "#3b82f6" }: { value: number; max: number
   );
 }
 
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
-  return (
-    <div className="rounded-lg border border-gray-100 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">{label}</p>
-      <p className="text-lg font-semibold" style={{ color }}>{value}</p>
-      {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-function YoYBadge({ yoy }: { yoy: YoYChange | null }) {
-  if (!yoy || yoy.pct_change === null) return null;
-  const up = yoy.pct_change > 0;
-  const color = up ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50";
-  const arrow = up ? "\u2191" : "\u2193";
-  return (
-    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${color}`}>
-      {arrow} {Math.abs(yoy.pct_change)}% r/r
-    </span>
-  );
-}
-
-function ViewportSummary({ stats, transactionCount, yoy }: { stats: ViewportStats | null; transactionCount: number; yoy: YoYChange | null }) {
+function KeyStatsCard({ stats, transactionCount, yoy }: { stats: ViewportStats | null; transactionCount: number; yoy: InsightsData["yoyChange"] }) {
   if (!stats) return null;
 
+  const yoyUp = yoy?.pct_change != null ? yoy.pct_change > 0 : null;
+
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard
-          label="Transakcje"
-          value={formatCompact(stats.total_count)}
-          sub={`${transactionCount} na mapie`}
-          color="#1e40af"
-        />
-        <StatCard
-          label="Sr. cena/m²"
-          value={stats.avg_price_per_sqm ? `${formatCompact(stats.avg_price_per_sqm)}` : "—"}
-          sub="zl/m²"
-          color="#059669"
-        />
-        <StatCard
-          label="Mediana/m²"
-          value={stats.median_price_per_sqm ? `${formatCompact(stats.median_price_per_sqm)}` : "—"}
-          sub="zl/m²"
-          color="#7c3aed"
-        />
+    <Card>
+      {/* Main price — hero number */}
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Srednia cena</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-3xl font-bold text-gray-900">
+          {stats.avg_price_per_sqm ? formatCompact(stats.avg_price_per_sqm) : "—"}
+        </span>
+        <span className="text-sm text-gray-400">zl/m²</span>
+        {yoy?.pct_change != null && (
+          <span className={`text-sm font-semibold ${yoyUp ? "text-red-500" : "text-green-500"}`}>
+            {yoyUp ? "↑" : "↓"} {Math.abs(yoy.pct_change)}%
+          </span>
+        )}
       </div>
-      {yoy && yoy.pct_change !== null && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-          <span>Zmiana rok do roku:</span>
-          <YoYBadge yoy={yoy} />
-          {yoy.current_avg && yoy.previous_avg && (
-            <span className="text-gray-400">
-              ({formatPricePerSqm(yoy.previous_avg)} → {formatPricePerSqm(yoy.current_avg)})
-            </span>
-          )}
+
+      {/* Secondary stats row */}
+      <div className="mt-4 grid grid-cols-3 gap-4">
+        <div>
+          <p className="text-xs text-gray-400 mb-0.5">Mediana</p>
+          <p className="text-lg font-semibold text-gray-800">
+            {stats.median_price_per_sqm ? formatCompact(stats.median_price_per_sqm) : "—"}
+          </p>
+          <p className="text-[11px] text-gray-400">zl/m²</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400 mb-0.5">Transakcje</p>
+          <p className="text-lg font-semibold text-blue-600">{formatCompact(stats.total_count)}</p>
+          <p className="text-[11px] text-gray-400">{transactionCount} na mapie</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400 mb-0.5">Zakres cen</p>
+          <p className="text-lg font-semibold text-gray-800">
+            {stats.min_price && stats.max_price
+              ? `${formatCompact(stats.min_price)}`
+              : "—"}
+          </p>
+          <p className="text-[11px] text-gray-400">
+            {stats.min_price && stats.max_price
+              ? `do ${formatCompact(stats.max_price)} zl`
+              : ""}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function WarsawComparisonCard({ viewportAvg, warsawStats }: { viewportAvg: number | null; warsawStats: WarsawStats | null }) {
+  if (!viewportAvg || !warsawStats?.avg_price_per_sqm) return null;
+
+  const wAvg = warsawStats.avg_price_per_sqm;
+  const pct = Math.round(((viewportAvg - wAvg) / wAvg) * 100);
+  const isAbove = pct > 0;
+  const maxVal = Math.max(viewportAvg, wAvg);
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs uppercase tracking-wider text-gray-400">Obszar vs Warszawa</p>
+        <span className={`text-lg font-bold ${isAbove ? "text-red-500" : "text-green-500"}`}>
+          {isAbove ? "+" : ""}{pct}%
+        </span>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-600 font-medium">Ten obszar</span>
+            <span className="font-semibold text-gray-900">{formatPricePerSqm(viewportAvg)}</span>
+          </div>
+          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(viewportAvg / maxVal) * 100}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-600 font-medium">Warszawa</span>
+            <span className="font-semibold text-gray-900">{formatPricePerSqm(wAvg)}</span>
+          </div>
+          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-gray-400 rounded-full transition-all" style={{ width: `${(wAvg / maxVal) * 100}%` }} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function VolumeSparklineCard({ data }: { data: VolumeTrend[] }) {
+  if (data.length < 2) return null;
+  const recent = data.slice(-12);
+  const values = recent.map((d) => d.transaction_count);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
+  const w = 140;
+  const h = 32;
+
+  const points = recent.map((d, i) => {
+    const x = (i / (recent.length - 1)) * w;
+    const y = h - ((d.transaction_count - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  }).join(" ");
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Wolumen miesiecznie</p>
+          <p className="text-2xl font-bold text-emerald-600">{values[values.length - 1]}</p>
+          <p className="text-xs text-gray-400">transakcji/mies.</p>
+        </div>
+        <svg width={w} height={h} className="shrink-0">
+          <polyline
+            points={points}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    </Card>
+  );
+}
+
+function PriceTrendCard({ data }: { data: InsightsData["priceTrends"] }) {
+  if (data.length < 2) return null;
+
+  const recent = data.slice(-6);
+  const primaryAvg = recent.filter((d) => d.market_primary_avg).map((d) => d.market_primary_avg!);
+  const secondaryAvg = recent.filter((d) => d.market_secondary_avg).map((d) => d.market_secondary_avg!);
+  const pAvg = primaryAvg.length > 0 ? primaryAvg.reduce((a, b) => a + b, 0) / primaryAvg.length : 0;
+  const sAvg = secondaryAvg.length > 0 ? secondaryAvg.reduce((a, b) => a + b, 0) / secondaryAvg.length : 0;
+  const hasMarketBreakdown = pAvg > 0 || sAvg > 0;
+  const total = pAvg + sAvg;
+  const pPct = total > 0 ? Math.round((pAvg / total) * 100) : 50;
+
+  return (
+    <Card>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Trend cen (miesieczny)</p>
+      <PriceTrendChart data={data} height={140} />
+      {hasMarketBreakdown && (
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <p className="text-xs text-gray-400 mb-2">Rynek pierwotny vs wtorny</p>
+          <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-2">
+            <div className="bg-emerald-500 rounded-l-full transition-all" style={{ width: `${pPct}%` }} />
+            <div className="bg-blue-500 rounded-r-full transition-all" style={{ width: `${100 - pPct}%` }} />
+          </div>
+          <div className="flex justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span className="text-gray-600">Pierwotny</span>
+              <span className="font-semibold">{pAvg > 0 ? formatPricePerSqm(pAvg) : "—"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-blue-500" />
+              <span className="text-gray-600">Wtorny</span>
+              <span className="font-semibold">{sAvg > 0 ? formatPricePerSqm(sAvg) : "—"}</span>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -102,22 +223,24 @@ function FloorSection({ data }: { data: InsightsData["floorAnalysis"] }) {
   const filtered = data.filter((d) => d.floor >= 0 && d.floor <= 20);
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <p className="text-xs text-gray-500">Cena/m² wg pietra</p>
-        <span className="text-[10px] text-blue-600">Najdrozsze: {best.floor === 0 ? "parter" : `${best.floor}p.`} — {formatPricePerSqm(best.avg_price_per_sqm)}</span>
+    <Card>
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-xs uppercase tracking-wider text-gray-400">Cena wg pietra</p>
+        <span className="text-xs text-blue-600 font-medium">
+          Najdrozsze: {best.floor === 0 ? "parter" : `${best.floor}p.`} — {formatPricePerSqm(best.avg_price_per_sqm)}
+        </span>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-2">
         {filtered.map((d) => (
-          <div key={d.floor} className="flex items-center gap-2 text-xs">
-            <span className="w-10 text-gray-500 shrink-0">{d.floor === 0 ? "Parter" : `${d.floor}p.`}</span>
+          <div key={d.floor} className="flex items-center gap-3 text-sm">
+            <span className="w-12 text-gray-500 shrink-0 font-medium">{d.floor === 0 ? "Parter" : `${d.floor}p.`}</span>
             <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color={d.floor === 0 ? "#9ca3af" : d.floor <= 3 ? "#60a5fa" : "#3b82f6"} />
-            <span className="w-20 text-right shrink-0 font-medium">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
-            <span className="w-10 text-right text-gray-400 shrink-0">{d.transaction_count}</span>
+            <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
+            <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -127,27 +250,27 @@ function RoomsSection({ data }: { data: InsightsData["roomsAnalysis"] }) {
   const labels: Record<number, string> = { 1: "Kawalerka", 2: "2-pokojowe", 3: "3-pokojowe", 4: "4-pokojowe", 5: "5-pokojowe", 6: "6+ pokoi" };
 
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Cena wg liczby pokoi</p>
-      <div className="space-y-1">
+    <Card>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Cena wg liczby pokoi</p>
+      <div className="space-y-2">
         {data.map((d) => (
-          <div key={d.rooms} className="flex items-center gap-2 text-xs">
-            <span className="w-20 text-gray-500 shrink-0">{labels[d.rooms] || `${d.rooms} pok.`}</span>
+          <div key={d.rooms} className="flex items-center gap-3 text-sm">
+            <span className="w-24 text-gray-500 shrink-0 font-medium">{labels[d.rooms] || `${d.rooms} pok.`}</span>
             <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#8b5cf6" />
-            <span className="w-20 text-right shrink-0 font-medium">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
-            <span className="w-10 text-right text-gray-400 shrink-0">{d.transaction_count}</span>
+            <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
+            <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
         ))}
       </div>
-      <div className="mt-2 pt-2 border-t border-gray-50 grid grid-cols-2 gap-x-4 gap-y-0.5">
+      <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 gap-x-6 gap-y-1">
         {data.map((d) => (
-          <div key={`d-${d.rooms}`} className="flex justify-between text-[10px] text-gray-400">
+          <div key={`d-${d.rooms}`} className="flex justify-between text-xs text-gray-400">
             <span>{labels[d.rooms] || `${d.rooms} pok.`}</span>
             <span>sr. {d.avg_area.toFixed(0)} m² | {formatPLN(d.avg_total_price)}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -156,19 +279,19 @@ function AreaSection({ data }: { data: InsightsData["areaAnalysis"] }) {
   const maxAvg = Math.max(...data.map((d) => d.avg_price_per_sqm));
 
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Cena/m² wg metrazu</p>
-      <div className="space-y-1">
+    <Card>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Cena/m² wg metrazu</p>
+      <div className="space-y-2">
         {data.map((d) => (
-          <div key={d.area_bucket} className="flex items-center gap-2 text-xs">
-            <span className="w-16 text-gray-500 shrink-0">{d.area_bucket}</span>
+          <div key={d.area_bucket} className="flex items-center gap-3 text-sm">
+            <span className="w-20 text-gray-500 shrink-0 font-medium">{d.area_bucket}</span>
             <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#f59e0b" />
-            <span className="w-20 text-right shrink-0 font-medium">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
-            <span className="w-10 text-right text-gray-400 shrink-0">{d.transaction_count}</span>
+            <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
+            <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -178,19 +301,19 @@ function VolumeSection({ data }: { data: InsightsData["volumeTrends"] }) {
   const shown = data.slice(-12);
 
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Wolumen transakcji (ostatnie {shown.length} mies.)</p>
-      <div className="space-y-1">
+    <Card>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Wolumen (ostatnie {shown.length} mies.)</p>
+      <div className="space-y-1.5">
         {shown.map((d) => (
-          <div key={d.month} className="flex items-center gap-2 text-xs">
-            <span className="w-14 text-gray-500 shrink-0">{d.month}</span>
+          <div key={d.month} className="flex items-center gap-3 text-sm">
+            <span className="w-16 text-gray-500 shrink-0 font-medium">{d.month}</span>
             <MiniBar value={d.transaction_count} max={maxCount} color="#10b981" />
-            <span className="w-10 text-right shrink-0 font-medium">{d.transaction_count}</span>
-            <span className="w-20 text-right text-gray-400 shrink-0">sr. {formatPLN(d.avg_price)}</span>
+            <span className="w-10 text-right shrink-0 font-semibold">{d.transaction_count}</span>
+            <span className="w-24 text-right text-gray-400 shrink-0 text-xs">sr. {formatPLN(d.avg_price)}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -205,78 +328,49 @@ function PartiesSection({ data }: { data: InsightsData["partyAnalysis"] }) {
   };
 
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Transakcje wg typow stron</p>
-      <table className="w-full text-xs">
+    <Card>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Transakcje wg stron</p>
+      <table className="w-full text-sm">
         <thead>
           <tr className="text-gray-400 border-b border-gray-100">
-            <th className="text-left py-1 font-medium text-[10px] uppercase tracking-wider">Kupujacy</th>
-            <th className="text-left py-1 font-medium text-[10px] uppercase tracking-wider">Sprzedajacy</th>
-            <th className="text-right py-1 font-medium text-[10px] uppercase tracking-wider">Sr. cena</th>
-            <th className="text-right py-1 font-medium text-[10px] uppercase tracking-wider">Ile</th>
+            <th className="text-left py-2 font-medium text-xs">Kupujacy</th>
+            <th className="text-left py-2 font-medium text-xs">Sprzedajacy</th>
+            <th className="text-right py-2 font-medium text-xs">Sr. cena</th>
+            <th className="text-right py-2 font-medium text-xs">Ile</th>
           </tr>
         </thead>
         <tbody>
           {data.slice(0, 10).map((d, i) => (
             <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-              <td className="py-1.5">{labels[d.buyer_type || ""] || d.buyer_type || "—"}</td>
-              <td className="py-1.5">{labels[d.seller_type || ""] || d.seller_type || "—"}</td>
-              <td className="text-right py-1.5 font-medium">
+              <td className="py-2">{labels[d.buyer_type || ""] || d.buyer_type || "—"}</td>
+              <td className="py-2">{labels[d.seller_type || ""] || d.seller_type || "—"}</td>
+              <td className="text-right py-2 font-semibold">
                 {d.avg_price_per_sqm ? formatPricePerSqm(d.avg_price_per_sqm) : formatPLN(d.avg_total_price)}
               </td>
-              <td className="text-right py-1.5 text-gray-400">{d.transaction_count}</td>
+              <td className="text-right py-2 text-gray-400">{d.transaction_count}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function MarketBreakdown({ data }: { data: InsightsData["priceTrends"] }) {
-  const recent = data.slice(-6);
-  const primaryAvg = recent.filter((d) => d.market_primary_avg).map((d) => d.market_primary_avg!);
-  const secondaryAvg = recent.filter((d) => d.market_secondary_avg).map((d) => d.market_secondary_avg!);
-
-  if (primaryAvg.length === 0 && secondaryAvg.length === 0) return null;
-
-  const pAvg = primaryAvg.length > 0 ? primaryAvg.reduce((a, b) => a + b, 0) / primaryAvg.length : 0;
-  const sAvg = secondaryAvg.length > 0 ? secondaryAvg.reduce((a, b) => a + b, 0) / secondaryAvg.length : 0;
-  const total = pAvg + sAvg;
-  const pPct = total > 0 ? Math.round((pAvg / total) * 100) : 50;
-
-  return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">Rynek pierwotny vs wtorny (ost. 6 mies.)</p>
-      <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-2">
-        <div className="bg-emerald-500 rounded-l-full transition-all" style={{ width: `${pPct}%` }} />
-        <div className="bg-blue-500 rounded-r-full transition-all" style={{ width: `${100 - pPct}%` }} />
-      </div>
-      <div className="flex justify-between text-xs">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          <span className="text-gray-600">Pierwotny</span>
-          <span className="font-medium">{pAvg > 0 ? formatPricePerSqm(pAvg) : "—"}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-          <span className="text-gray-600">Wtorny</span>
-          <span className="font-medium">{sAvg > 0 ? formatPricePerSqm(sAvg) : "—"}</span>
-        </div>
-      </div>
-    </div>
+    </Card>
   );
 }
 
 function EmptyHint() {
-  return <p className="text-xs text-gray-400 py-3 text-center">Brak danych. Zmien obszar lub filtry.</p>;
+  return (
+    <Card>
+      <p className="text-sm text-gray-400 py-4 text-center">Brak danych. Zmien obszar lub filtry.</p>
+    </Card>
+  );
 }
 
-function SectionHeader({ title, active, onClick }: { title: string; active: boolean; onClick: () => void }) {
+function SectionTab({ title, active, onClick }: { title: string; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${active ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}
+      className={`text-sm font-medium px-4 py-2 rounded-xl transition-colors ${
+        active ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"
+      }`}
     >
       {title}
     </button>
@@ -285,11 +379,10 @@ function SectionHeader({ title, active, onClick }: { title: string; active: bool
 
 // --- Main Sidebar ---
 
-export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, transactionCount }: AnalyticsSidebarProps) {
+export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount }: AnalyticsSidebarProps) {
   const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<Section>("trends");
+  const [section, setSection] = useState<Section>("floor");
 
-  // Auto-fetch when sidebar opens
   useEffect(() => {
     if (open) onRefresh();
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -298,47 +391,47 @@ export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, t
 
   return (
     <>
-      {/* Toggle tab on right edge */}
+      {/* Toggle tab */}
       <button
         onClick={() => setOpen(!open)}
         className={`absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-300 ${
-          open ? "right-[420px]" : "right-0"
+          open ? "right-[440px]" : "right-0"
         }`}
       >
-        <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-l-lg px-2 py-5 flex flex-col items-center gap-1.5 hover:bg-gray-50 transition-colors border border-r-0 border-gray-200">
+        <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-l-xl px-2.5 py-6 flex flex-col items-center gap-2 hover:bg-gray-50 transition-colors border border-r-0 border-gray-200">
           <svg
-            className={`w-4 h-4 text-gray-600 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`w-5 h-5 text-gray-600 transition-transform ${open ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="text-xs text-gray-600 font-semibold [writing-mode:vertical-lr] tracking-wide">Analityka</span>
+          <span className="text-sm text-gray-600 font-semibold [writing-mode:vertical-lr] tracking-wider">Analityka</span>
         </div>
       </button>
 
       {/* Sidebar panel */}
       <div
-        className={`absolute top-0 right-0 z-10 h-full w-[420px] bg-white/95 backdrop-blur-sm shadow-xl border-l border-gray-200 transition-transform duration-300 flex flex-col ${
+        className={`absolute top-0 right-0 z-10 h-full w-[440px] bg-gray-50/95 backdrop-blur-sm shadow-xl border-l border-gray-200 transition-transform duration-300 flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="px-5 pt-5 pb-4 bg-white border-b border-gray-100 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">Analiza rynku</h2>
-            <p className="text-[10px] text-gray-400">Dane z widocznego obszaru mapy</p>
+            <h2 className="text-lg font-bold text-gray-900">Analiza rynku</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Dane z widocznego obszaru mapy</p>
           </div>
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-300 flex items-center gap-1"
+            className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-300 flex items-center gap-1.5"
           >
             {loading ? (
-              <span className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
             ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             )}
@@ -346,56 +439,54 @@ export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, t
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
-          {error && <p className="text-xs text-red-500 px-4 pt-2">{error}</p>}
+        {/* Scrollable content — cards with gaps */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {error && <p className="text-sm text-red-500 px-1">{error}</p>}
 
-          {/* Viewport Summary */}
-          <div className="px-4 py-3">
-            <ViewportSummary stats={stats} transactionCount={transactionCount} yoy={insights.yoyChange} />
-          </div>
+          {/* Key stats card */}
+          <KeyStatsCard stats={stats} transactionCount={transactionCount} yoy={insights.yoyChange} />
 
-          {/* Price Trend Chart */}
-          {hasInsights && (
-            <div className="px-4 pb-3">
-              <p className="text-xs text-gray-500 mb-1">Trend cen/m² (miesieczny)</p>
-              <PriceTrendChart data={insights.priceTrends} />
-              <MarketBreakdown data={insights.priceTrends} />
-            </div>
-          )}
+          {/* Warsaw comparison */}
+          <WarsawComparisonCard viewportAvg={stats?.avg_price_per_sqm ?? null} warsawStats={warsawStats} />
 
-          {/* Divider */}
-          <div className="border-t border-gray-100" />
+          {/* Market gauge */}
+          {hasInsights && <MarketGauge insights={insights} />}
+
+          {/* Volume sparkline */}
+          {hasInsights && <VolumeSparklineCard data={insights.volumeTrends} />}
+
+          {/* Price trend chart */}
+          {hasInsights && <PriceTrendCard data={insights.priceTrends} />}
 
           {/* Section tabs */}
-          <div className="px-4 py-2 flex gap-0.5 overflow-x-auto shrink-0">
-            <SectionHeader title="Pietro" active={section === "floor"} onClick={() => setSection("floor")} />
-            <SectionHeader title="Pokoje" active={section === "rooms"} onClick={() => setSection("rooms")} />
-            <SectionHeader title="Metraz" active={section === "area"} onClick={() => setSection("area")} />
-            <SectionHeader title="Wolumen" active={section === "volume"} onClick={() => setSection("volume")} />
-            <SectionHeader title="Strony" active={section === "parties"} onClick={() => setSection("parties")} />
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            <SectionTab title="Pietro" active={section === "floor"} onClick={() => setSection("floor")} />
+            <SectionTab title="Pokoje" active={section === "rooms"} onClick={() => setSection("rooms")} />
+            <SectionTab title="Metraz" active={section === "area"} onClick={() => setSection("area")} />
+            <SectionTab title="Wolumen" active={section === "volume"} onClick={() => setSection("volume")} />
+            <SectionTab title="Strony" active={section === "parties"} onClick={() => setSection("parties")} />
           </div>
 
           {/* Section content */}
-          <div className="px-4 pb-4">
-            {loading && !hasInsights ? (
+          {loading && !hasInsights ? (
+            <Card>
               <div className="flex justify-center py-8">
-                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : (
-              <>
-                {section === "floor" && <FloorSection data={insights.floorAnalysis} />}
-                {section === "rooms" && <RoomsSection data={insights.roomsAnalysis} />}
-                {section === "area" && <AreaSection data={insights.areaAnalysis} />}
-                {section === "volume" && <VolumeSection data={insights.volumeTrends} />}
-                {section === "parties" && <PartiesSection data={insights.partyAnalysis} />}
-              </>
-            )}
-          </div>
+            </Card>
+          ) : (
+            <>
+              {section === "floor" && <FloorSection data={insights.floorAnalysis} />}
+              {section === "rooms" && <RoomsSection data={insights.roomsAnalysis} />}
+              {section === "area" && <AreaSection data={insights.areaAnalysis} />}
+              {section === "volume" && <VolumeSection data={insights.volumeTrends} />}
+              {section === "parties" && <PartiesSection data={insights.partyAnalysis} />}
+            </>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-100 text-[10px] text-gray-400 shrink-0">
+        <div className="px-5 py-3 bg-white border-t border-gray-100 text-xs text-gray-400 shrink-0">
           obok.me — Dane z RCN (Rejestr Cen Nieruchomosci)
         </div>
       </div>

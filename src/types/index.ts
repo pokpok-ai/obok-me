@@ -103,6 +103,18 @@ export interface YoYChange {
   previous_count: number;
 }
 
+export interface WarsawStats {
+  total_count: number;
+  avg_price_per_sqm: number | null;
+  median_price_per_sqm: number | null;
+}
+
+export interface HeatmapPoint {
+  lat: number;
+  lng: number;
+  weight: number;
+}
+
 export interface InsightsData {
   priceTrends: PriceTrend[];
   floorAnalysis: FloorAnalysis[];

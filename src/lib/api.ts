@@ -4,6 +4,8 @@ import type {
   Filters,
   Transaction,
   ViewportStats,
+  WarsawStats,
+  HeatmapPoint,
   PriceTrend,
   FloorAnalysis,
   RoomsAnalysis,
@@ -49,6 +51,45 @@ export async function fetchViewportStats(
 
   if (error) throw error;
   return (data as ViewportStats[])?.[0] || null;
+}
+
+// --- Warsaw-wide stats API ---
+
+export async function fetchWarsawStats(
+  filters: Filters
+): Promise<WarsawStats | null> {
+  const { data, error } = await getSupabase().rpc("warsaw_wide_stats", {
+    date_from: filters.dateFrom || null,
+    date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
+  });
+
+  if (error) {
+    console.warn("Warsaw stats not available:", error.message);
+    return null;
+  }
+  return (data as WarsawStats[])?.[0] || null;
+}
+
+// --- Heatmap API ---
+
+export async function fetchHeatmapPoints(
+  bounds: ViewBounds,
+  filters: Filters
+): Promise<HeatmapPoint[]> {
+  const { data, error } = await getSupabase().rpc("heatmap_points", {
+    min_lat: bounds.south,
+    min_lng: bounds.west,
+    max_lat: bounds.north,
+    max_lng: bounds.east,
+    date_from: filters.dateFrom || null,
+    date_to: filters.dateTo || null,
+    func_type: filters.functionType || null,
+    max_results: 5000,
+  });
+
+  if (error) throw error;
+  return (data as HeatmapPoint[]) || [];
 }
 
 // --- Correlation / Insights API ---

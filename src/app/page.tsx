@@ -3,11 +3,13 @@
 import { useState, useCallback, useMemo } from "react";
 import { MapContainer } from "@/components/MapContainer";
 import { TransactionMarkers } from "@/components/TransactionMarkers";
+import { HeatmapLayer } from "@/components/HeatmapLayer";
 import { FilterBar } from "@/components/FilterBar";
 import { LocateMe } from "@/components/LocateMe";
 import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
+import { useHeatmap } from "@/hooks/useHeatmap";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
@@ -23,6 +25,7 @@ export default function HomePage() {
     lng: number;
   } | null>(null);
   const [focusedTransaction, setFocusedTransaction] = useState<Transaction | null>(null);
+  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
 
   const stableFilters = useMemo(
     () => ({
@@ -42,10 +45,17 @@ export default function HomePage() {
 
   const {
     insights,
+    warsawStats,
     loading: insightsLoading,
     error: insightsError,
     refresh: refreshInsights,
   } = useInsights(debouncedBounds, stableFilters);
+
+  const { points: heatmapPoints } = useHeatmap(
+    debouncedBounds,
+    stableFilters,
+    heatmapEnabled
+  );
 
   const typeStats = useMemo(() => {
     const m = new Map<string, { count: number; sumPpsm: number; countPpsm: number; sumPrice: number }>();
@@ -113,9 +123,39 @@ export default function HomePage() {
         onTypeClick={handleTypeClick}
       />
       <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter}>
-        <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} />
+        {!heatmapEnabled && (
+          <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} />
+        )}
+        {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
+      <button
+        onClick={() => setHeatmapEnabled(!heatmapEnabled)}
+        className={`absolute bottom-8 left-16 z-10 rounded-full p-3 shadow-lg transition-colors group ${
+          heatmapEnabled
+            ? "bg-orange-500 hover:bg-orange-600"
+            : "bg-white hover:bg-gray-50"
+        }`}
+        title={heatmapEnabled ? "Wylacz mape ciepla" : "Mapa ciepla cen"}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`w-5 h-5 transition-colors ${
+            heatmapEnabled
+              ? "text-white"
+              : "text-gray-600 group-hover:text-orange-600"
+          }`}
+        >
+          <path d="M12 2c-4 4-8 7.33-8 12a8 8 0 1016 0c0-4.67-4-8-8-12z" />
+          <path d="M12 12c-1.33 1.33-2 2.67-2 4a2 2 0 104 0c0-1.33-.67-2.67-2-4z" />
+        </svg>
+      </button>
       {loading && transactions.length === 0 && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3">
@@ -126,6 +166,7 @@ export default function HomePage() {
       )}
       <AnalyticsSidebar
         stats={stats}
+        warsawStats={warsawStats}
         insights={insights}
         loading={insightsLoading}
         error={insightsError}

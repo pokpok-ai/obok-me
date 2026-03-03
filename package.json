@@ -14,7 +14,8 @@
     "@vis.gl/react-google-maps": "^1.7.1",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-gauge-component": "^2.0.26"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

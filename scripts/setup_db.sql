@@ -160,6 +160,76 @@ $$;
 
 
 -- =============================================================
+-- RPC: Heatmap points (lat/lng/weight) for price density overlay
+-- Higher limit (5000) than transactions_in_view for good coverage
+-- =============================================================
+DROP FUNCTION IF EXISTS heatmap_points(float, float, float, float, date, date, text, integer);
+
+CREATE OR REPLACE FUNCTION heatmap_points(
+  min_lat FLOAT,
+  min_lng FLOAT,
+  max_lat FLOAT,
+  max_lng FLOAT,
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL,
+  max_results INTEGER DEFAULT 5000
+)
+RETURNS TABLE (
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  weight NUMERIC
+)
+LANGUAGE SQL STABLE
+AS $$
+  SELECT
+    t.lat,
+    t.lng,
+    t.price_per_sqm AS weight
+  FROM transactions t
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND t.price_per_sqm IS NOT NULL
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
+  ORDER BY t.transaction_date DESC
+  LIMIT max_results;
+$$;
+
+
+-- =============================================================
+-- RPC: Warsaw-wide stats (city-level averages, no viewport filter)
+-- =============================================================
+DROP FUNCTION IF EXISTS warsaw_wide_stats(date, date, text);
+
+CREATE OR REPLACE FUNCTION warsaw_wide_stats(
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  total_count BIGINT,
+  avg_price_per_sqm NUMERIC,
+  median_price_per_sqm NUMERIC
+)
+LANGUAGE SQL STABLE
+AS $$
+  SELECT
+    COUNT(*)::BIGINT,
+    ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
+    ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0)
+  FROM transactions t
+  WHERE t.property_type = 'apartment'
+    AND t.price_per_sqm IS NOT NULL
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type);
+$$;
+
+
+-- =============================================================
 -- Row Level Security: public read access via anon key
 -- =============================================================
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;

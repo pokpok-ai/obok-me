@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchAllInsights } from "@/lib/api";
-import type { ViewBounds, Filters, InsightsData } from "@/types";
+import { fetchAllInsights, fetchWarsawStats } from "@/lib/api";
+import type { ViewBounds, Filters, InsightsData, WarsawStats } from "@/types";
 
 const EMPTY_INSIGHTS: InsightsData = {
   priceTrends: [],
@@ -14,6 +14,7 @@ const EMPTY_INSIGHTS: InsightsData = {
 
 export function useInsights(bounds: ViewBounds | null, filters: Filters) {
   const [insights, setInsights] = useState<InsightsData>(EMPTY_INSIGHTS);
+  const [warsawStats, setWarsawStats] = useState<WarsawStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,9 +25,15 @@ export function useInsights(bounds: ViewBounds | null, filters: Filters) {
     setLoading(true);
     setError(null);
 
-    fetchAllInsights(bounds, filters)
-      .then((data) => {
-        if (!cancelled) setInsights(data);
+    Promise.all([
+      fetchAllInsights(bounds, filters),
+      fetchWarsawStats(filters),
+    ])
+      .then(([data, wStats]) => {
+        if (!cancelled) {
+          setInsights(data);
+          setWarsawStats(wStats);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -46,5 +53,5 @@ export function useInsights(bounds: ViewBounds | null, filters: Filters) {
   // Auto-fetch is intentionally not enabled — insights are fetched on demand
   // to avoid hammering the DB on every viewport change.
 
-  return { insights, loading, error, refresh };
+  return { insights, warsawStats, loading, error, refresh };
 }
