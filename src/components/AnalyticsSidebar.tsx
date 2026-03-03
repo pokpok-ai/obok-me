@@ -305,7 +305,7 @@ export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, t
           open ? "right-[420px]" : "right-0"
         }`}
       >
-        <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-l-lg px-1.5 py-4 flex flex-col items-center gap-1 hover:bg-gray-50 transition-colors border border-r-0 border-gray-200">
+        <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-l-lg px-2 py-5 flex flex-col items-center gap-1.5 hover:bg-gray-50 transition-colors border border-r-0 border-gray-200">
           <svg
             className={`w-4 h-4 text-gray-600 transition-transform ${open ? "rotate-180" : ""}`}
             fill="none"
@@ -314,7 +314,7 @@ export function AnalyticsSidebar({ stats, insights, loading, error, onRefresh, t
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="text-[10px] text-gray-500 font-medium [writing-mode:vertical-lr]">Analityka</span>
+          <span className="text-xs text-gray-600 font-semibold [writing-mode:vertical-lr] tracking-wide">Analityka</span>
         </div>
       </button>
 
