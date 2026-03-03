@@ -275,7 +275,7 @@ export function InsightsPanel({ insights, loading, error, onRefresh }: InsightsP
 
       {/* Panel */}
       {open && (
-        <div className="absolute bottom-16 right-4 z-10 w-96 max-h-[70vh] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden flex flex-col">
+        <div className="absolute bottom-16 right-4 z-10 w-[32rem] max-h-[70vh] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-3 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-800">Analiza i korelacje</h3>
