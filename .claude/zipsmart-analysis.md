@@ -128,16 +128,37 @@
 | PDF reports | pdf-report.ts | Generated from analytics |
 | AI Q&A summary | Claude API | Viewport stats → Polish summary |
 
+### Phase 3 — UPDATED: More Feasible Than Expected
+| ZipSmart Feature | obok.me Plan | Data Source | Notes |
+|---|---|---|---|
+| Crime Rate | DemographicsGrid card | **GUS BDL API** theme 37/371/2290 | Crimes by powiat, free JSON API |
+| **Buy vs Rent** | New card / indicator | **NBP ceny_mieszkan.xlsx** rental rates + RCN transaction prices | Quarterly XLSX with rental data since 2006! |
+| **Rental Rates** | Rent trend chart | **NBP ceny_mieszkan.xlsx** | Czynsz najmu by city, center vs outskirts |
+| Price-to-Income ratio | DemographicsGrid card | GUS BDL (avg salary) + RCN prices | Computed |
+| Unemployment rate | DemographicsGrid card | GUS BDL API | By powiat |
+| Population/Density | DemographicsGrid card | GUS BDL API | By gmina |
+| Higher Education % | DemographicsGrid card | GUS BDL API | By powiat |
+| Household Income (avg salary) | DemographicsGrid card | GUS BDL API | "Przecietne wynagrodzenie" by district |
+| Interest rates | Sidebar widget | NBP API (api.nbp.pl) | Free JSON API |
+
 ### NOT Possible (Missing Data)
 | ZipSmart Feature | Why Not |
 |---|---|
-| Cap rate / Rental analysis | No Polish rental data in RCN |
+| Shadow Inventory | No listing/inventory data in Poland (would need Otodom scraping) |
 | Days on Market | RCN has transaction dates only, no listing dates |
 | Real-time alerts | RCN is quarterly batch data |
 | Mortgage qualification % | US-specific metric |
-| Crime/school/POI overlays | Separate data sources needed (OpenStreetMap possible for future) |
-| Sentiment gauge (news/social) | Would need Polish news/social media API (but see Phase 2: we CAN build a data-driven gauge from RCN trends) |
 | REO/Foreclosure predictions | Not applicable to Polish market |
+
+### Key Data Sources Reference
+| Source | URL | Format | Auth | Data |
+|---|---|---|---|---|
+| **GUS BDL API** | `api.stat.gov.pl/Home/BdlApi` | REST JSON | None | Demographics, crime, education, employment by powiat/gmina |
+| **NBP ceny_mieszkan.xlsx** | `static.nbp.pl/dane/rynek-nieruchomosci/ceny_mieszkan.xlsx` | XLSX | None | Transaction prices + **rental rates** + hedonic indices, quarterly since 2006, 16+ cities incl Warsaw |
+| **NBP API** | `api.nbp.pl` | REST JSON | None | Interest rates, exchange rates |
+| **RCN (already imported)** | Supabase DB | SQL | Supabase key | 168K Warsaw apartment transactions |
+| **GUS BDL crime** | `bdl.stat.gov.pl/BDL/dane/podgrup/temat/37/371/2290` | REST JSON | None | Crimes detected by Police, by powiat |
+| **NBP quarterly reports** | `nbp.pl/publikacje/.../informacja-kwartalna/` | PDF | None | Detailed market analysis, can parse for additional data |
 
 ---
 
@@ -193,7 +214,8 @@
   - Wyksztalcenie wyzsze % (higher education)
   - Gestosc zaludnienia (population density)
   - Cena/dochod (price-to-income ratio) — computed from RCN price + GUS salary
-- NOT available: Crime Rate, Shadow Inventory, Buy vs Rent (no rental data in Poland)
+- CORRECTION: Crime Rate IS available (GUS BDL theme 37), Buy vs Rent IS possible (NBP rental data)
+- NOT available: Shadow Inventory only (no listing/inventory data in Poland)
 
 ### Design Notes
 - Clean white card with slight shadow over map

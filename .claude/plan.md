@@ -73,18 +73,35 @@
 
 ## Phase 3 — External Data
 
-### 3.1 GUS BDL Demographics (FREE API)
-- URL: https://api.stat.gov.pl/Home/BdlApi (REST, JSON, no auth)
+### 3.1 GUS BDL Demographics + Crime (FREE API, no auth)
+- URL: `api.stat.gov.pl/Home/BdlApi` (REST, JSON)
 - NEW: `src/lib/gus-api.ts`
 - NEW: `src/components/DemographicsGrid.tsx` — 3x2 stat card grid (ZipSmart "Market Conditions" style)
-- Cards: Populacja | Sr. wynagrodzenie | Bezrobocie % | Wyksztalcenie wyzsze % | Gestosc zaludnienia | Cena/dochod
+- **Cards**:
+  - Populacja (population)
+  - Sr. wynagrodzenie (avg salary / Household Income)
+  - Bezrobocie % (unemployment)
+  - Wyksztalcenie wyzsze % (higher education)
+  - Przestepczosc (crime rate) — **GUS BDL theme 37/371/2290** (crimes by powiat)
+  - Cena/dochod (price-to-income ratio) — computed: RCN avg price / GUS avg salary
 - Each card: large colored value + label + info tooltip
 - Color coding: green (good) / yellow (neutral) / orange (warning)
-- Calculate: price-to-income ratio (RCN avg price / GUS avg salary)
 
-### 3.2 NBP Interest Rates (FREE API)
+### 3.2 NBP Housing + Rental Data (FREE, XLSX + API)
+- **ceny_mieszkan.xlsx**: `static.nbp.pl/dane/rynek-nieruchomosci/ceny_mieszkan.xlsx`
+  - Transaction prices (primary + secondary market)
+  - **Rental rates** (czynsz najmu) — enables Buy vs Rent!
+  - Hedonic price indices
+  - Quarterly data since Q3 2006, Warsaw + 15 cities
+  - Split by: city center vs outskirts
+- NEW: `src/lib/nbp-data.ts` — parse XLSX, cache quarterly
+- NEW: `src/components/RentalCard.tsx` — Buy vs Rent indicator
+- **NBP quarterly PDF reports**: `nbp.pl/publikacje/.../informacja-kwartalna/` — parse for detailed market analysis
+
+### 3.3 NBP Interest Rates (FREE API)
+- URL: `api.nbp.pl` (REST, JSON, no auth)
 - NEW: `src/lib/nbp-api.ts`
-- Display: reference rate in sidebar
+- Display: reference rate + WIBOR history in sidebar
 
 ---
 
@@ -114,11 +131,15 @@
 | Function type sub-filters | RCN `lok_funkcja` | DONE |
 | Price heatmap | RCN lat/lng + price_per_sqm | Phase 2 |
 | Price forecast | RCN trend regression | Phase 2 |
-| Demographics | GUS BDL API | Phase 3 |
-| Interest rates | NBP API | Phase 3 |
+| Market gauge + signal | RCN trends composite | Phase 2 |
+| Demographics (population, salary, education) | GUS BDL API | Phase 3 |
+| Crime rate | GUS BDL API (theme 37) | Phase 3 |
+| Rental rates + Buy vs Rent | NBP ceny_mieszkan.xlsx | Phase 3 |
+| Interest rates + WIBOR | NBP API (api.nbp.pl) | Phase 3 |
+| Price-to-Income ratio | GUS salary + RCN price | Phase 3 |
 | PDF reports | Generated from analytics | Phase 4 |
 | AI Q&A summary | Claude API | Phase 4 |
-| Cap rate / Rental | No rental data | NOT POSSIBLE |
+| Shadow Inventory | No listing data | NOT POSSIBLE |
 | Days on Market | No listing dates | NOT POSSIBLE |
 | Real-time alerts | RCN is batch | NOT POSSIBLE |
 
