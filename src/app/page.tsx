@@ -132,6 +132,9 @@ export default function HomePage() {
         onRefresh={refreshInsights}
         transactionCount={transactions.length}
       />
+      <footer className="absolute bottom-1 left-1/2 -translate-x-1/2 z-10 text-[10px] text-gray-400 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
+        Open source — non-commercial use only · <a href="mailto:ceo@xclv.com" className="underline hover:text-gray-600">ceo@xclv.com</a>
+      </footer>
     </main>
   );
 }
