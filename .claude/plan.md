@@ -18,6 +18,9 @@
 - [x] Fixed anon role statement_timeout (3s → 8s) — was causing 500 errors on full viewport
 - [x] Added partial index `idx_transactions_apt_lat_lng` for apartment queries
 - [x] Default filter set to "Mieszkalna" (not "Wszystkie")
+- [x] Added footer (open source non-commercial + ceo@xclv.com)
+- [x] Enlarged Analityka sidebar toggle label
+- [x] Moved LocateMe to bottom-left (no more overlap with Maps zoom controls)
 
 ### Final function_type set (4 values only)
 | function_type | DB count | % |
@@ -34,6 +37,8 @@
 ---
 
 ## Phase 2 — Core Analytics (NEXT)
+
+**RULE: Keep ALL existing ANALIZA functionality. Only ADD new features on top.**
 
 ### 2.1 Price Heatmap Layer
 - NEW: `src/components/HeatmapLayer.tsx`
@@ -121,3 +126,4 @@
 | `src/components/TransactionMarkers.tsx` | Color-coded markers by price |
 | `src/components/AnalyticsSidebar.tsx` | Tabbed analytics panel |
 | `src/components/PriceTrendChart.tsx` | SVG sparkline for price trends |
+| `src/components/LocateMe.tsx` | Geolocation button (bottom-left) |
