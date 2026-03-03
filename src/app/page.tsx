@@ -116,6 +116,14 @@ export default function HomePage() {
         <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} />
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
+      {loading && transactions.length === 0 && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-gray-600 font-medium">Ladowanie danych...</span>
+          </div>
+        </div>
+      )}
       <InsightsPanel
         insights={insights}
         loading={insightsLoading}
