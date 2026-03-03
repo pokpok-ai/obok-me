@@ -95,6 +95,7 @@ RETURNS TABLE (
   additional_info TEXT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.id, t.price, t.price_per_sqm, t.transaction_date,
@@ -104,7 +105,7 @@ AS $$
     t.property_right, t.share_fraction,
     t.apartment_number, t.function_type, t.ancillary_area_sqm,
     t.building_type, t.zoning, t.land_use, t.additional_info
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -141,6 +142,7 @@ RETURNS TABLE (
   max_price NUMERIC
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     COUNT(*)::BIGINT,
@@ -148,7 +150,7 @@ AS $$
     ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0),
     MIN(t.price),
     MAX(t.price)
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -181,12 +183,13 @@ RETURNS TABLE (
   weight NUMERIC
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.lat,
     t.lng,
     t.price_per_sqm AS weight
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -215,12 +218,13 @@ RETURNS TABLE (
   median_price_per_sqm NUMERIC
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     COUNT(*)::BIGINT,
     ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
     ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0)
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.property_type = 'apartment'
     AND t.price_per_sqm IS NOT NULL
     AND (date_from IS NULL OR t.transaction_date >= date_from)

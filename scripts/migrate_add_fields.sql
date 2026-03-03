@@ -81,6 +81,7 @@ RETURNS TABLE (
   additional_info TEXT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.id, t.price, t.price_per_sqm, t.transaction_date,
@@ -90,7 +91,7 @@ AS $$
     t.property_right, t.share_fraction,
     t.apartment_number, t.function_type, t.ancillary_area_sqm,
     t.building_type, t.zoning, t.land_use, t.additional_info
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND (date_from IS NULL OR t.transaction_date >= date_from)

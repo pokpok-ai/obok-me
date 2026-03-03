@@ -1,18 +1,176 @@
--- obok.me — Correlation & Enrichment SQL Functions
--- Run this in Supabase SQL Editor after setup_db.sql
-
--- Drop old function signatures (changed params — added func_type)
-DROP FUNCTION IF EXISTS viewport_price_trends(float,float,float,float,date,date,text);
-DROP FUNCTION IF EXISTS viewport_floor_analysis(float,float,float,float,date,date);
-DROP FUNCTION IF EXISTS viewport_rooms_analysis(float,float,float,float,date,date);
-DROP FUNCTION IF EXISTS viewport_area_analysis(float,float,float,float,date,date);
-DROP FUNCTION IF EXISTS viewport_volume_trends(float,float,float,float,text);
-DROP FUNCTION IF EXISTS viewport_party_analysis(float,float,float,float,date,date);
-DROP FUNCTION IF EXISTS viewport_yoy_change(float,float,float,float,text);
+-- obok.me — Fix: Function Search Path Mutable (Supabase Security Advisor lint 0011)
+--
+-- All RPC functions must set `search_path = ''` and use fully-qualified table
+-- references (public.transactions) to prevent search_path manipulation attacks.
+--
+-- Run this in Supabase SQL Editor to patch all 11 deployed functions.
 
 -- =============================================================
--- RPC: Monthly price trends for current viewport
--- Returns avg/median price per m² by month, split by market type
+-- 1. transactions_in_view
+-- =============================================================
+CREATE OR REPLACE FUNCTION transactions_in_view(
+  min_lat FLOAT,
+  min_lng FLOAT,
+  max_lat FLOAT,
+  max_lng FLOAT,
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL,
+  max_results INTEGER DEFAULT 500
+)
+RETURNS TABLE (
+  id BIGINT,
+  price NUMERIC,
+  price_per_sqm NUMERIC,
+  transaction_date DATE,
+  property_type TEXT,
+  market_type TEXT,
+  area_sqm NUMERIC,
+  rooms INTEGER,
+  floor INTEGER,
+  address TEXT,
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  transaction_type TEXT,
+  seller_type TEXT,
+  buyer_type TEXT,
+  property_right TEXT,
+  share_fraction TEXT,
+  apartment_number TEXT,
+  function_type TEXT,
+  ancillary_area_sqm NUMERIC,
+  building_type TEXT,
+  zoning TEXT,
+  land_use TEXT,
+  additional_info TEXT
+)
+LANGUAGE SQL STABLE
+SET search_path = ''
+AS $$
+  SELECT
+    t.id, t.price, t.price_per_sqm, t.transaction_date,
+    t.property_type, t.market_type, t.area_sqm, t.rooms,
+    t.floor, t.address, t.lat, t.lng,
+    t.transaction_type, t.seller_type, t.buyer_type,
+    t.property_right, t.share_fraction,
+    t.apartment_number, t.function_type, t.ancillary_area_sqm,
+    t.building_type, t.zoning, t.land_use, t.additional_info
+  FROM public.transactions t
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
+  ORDER BY t.transaction_date DESC
+  LIMIT max_results;
+$$;
+
+-- =============================================================
+-- 2. viewport_stats
+-- =============================================================
+CREATE OR REPLACE FUNCTION viewport_stats(
+  min_lat FLOAT,
+  min_lng FLOAT,
+  max_lat FLOAT,
+  max_lng FLOAT,
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  total_count BIGINT,
+  avg_price_per_sqm NUMERIC,
+  median_price_per_sqm NUMERIC,
+  min_price NUMERIC,
+  max_price NUMERIC
+)
+LANGUAGE SQL STABLE
+SET search_path = ''
+AS $$
+  SELECT
+    COUNT(*)::BIGINT,
+    ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
+    ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0),
+    MIN(t.price),
+    MAX(t.price)
+  FROM public.transactions t
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
+    AND t.price_per_sqm IS NOT NULL;
+$$;
+
+-- =============================================================
+-- 3. heatmap_points
+-- =============================================================
+CREATE OR REPLACE FUNCTION heatmap_points(
+  min_lat FLOAT,
+  min_lng FLOAT,
+  max_lat FLOAT,
+  max_lng FLOAT,
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL,
+  max_results INTEGER DEFAULT 5000
+)
+RETURNS TABLE (
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  weight NUMERIC
+)
+LANGUAGE SQL STABLE
+SET search_path = ''
+AS $$
+  SELECT
+    t.lat,
+    t.lng,
+    t.price_per_sqm AS weight
+  FROM public.transactions t
+  WHERE t.lat BETWEEN min_lat AND max_lat
+    AND t.lng BETWEEN min_lng AND max_lng
+    AND t.property_type = 'apartment'
+    AND t.price_per_sqm IS NOT NULL
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type)
+  ORDER BY t.transaction_date DESC
+  LIMIT max_results;
+$$;
+
+-- =============================================================
+-- 4. warsaw_wide_stats
+-- =============================================================
+CREATE OR REPLACE FUNCTION warsaw_wide_stats(
+  date_from DATE DEFAULT NULL,
+  date_to DATE DEFAULT NULL,
+  func_type TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  total_count BIGINT,
+  avg_price_per_sqm NUMERIC,
+  median_price_per_sqm NUMERIC
+)
+LANGUAGE SQL STABLE
+SET search_path = ''
+AS $$
+  SELECT
+    COUNT(*)::BIGINT,
+    ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
+    ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0)
+  FROM public.transactions t
+  WHERE t.property_type = 'apartment'
+    AND t.price_per_sqm IS NOT NULL
+    AND (date_from IS NULL OR t.transaction_date >= date_from)
+    AND (date_to IS NULL OR t.transaction_date <= date_to)
+    AND (func_type IS NULL OR t.function_type = func_type);
+$$;
+
+-- =============================================================
+-- 5. viewport_price_trends
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_price_trends(
   min_lat FLOAT,
@@ -54,10 +212,8 @@ AS $$
   ORDER BY DATE_TRUNC('month', t.transaction_date);
 $$;
 
-
 -- =============================================================
--- RPC: Floor premium analysis for apartments in viewport
--- Returns avg price/m² by floor number
+-- 6. viewport_floor_analysis
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_floor_analysis(
   min_lat FLOAT,
@@ -96,10 +252,8 @@ AS $$
   ORDER BY t.floor;
 $$;
 
-
 -- =============================================================
--- RPC: Room count vs price analysis
--- Returns avg price/m² by number of rooms
+-- 7. viewport_rooms_analysis
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_rooms_analysis(
   min_lat FLOAT,
@@ -141,9 +295,8 @@ AS $$
   ORDER BY t.rooms;
 $$;
 
-
 -- =============================================================
--- RPC: Area size distribution — price/m² by area range buckets
+-- 8. viewport_area_analysis
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_area_analysis(
   min_lat FLOAT,
@@ -196,9 +349,8 @@ AS $$
   ORDER BY bucket_order;
 $$;
 
-
 -- =============================================================
--- RPC: Transaction volume trends — monthly deal counts
+-- 9. viewport_volume_trends
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_volume_trends(
   min_lat FLOAT,
@@ -231,9 +383,8 @@ AS $$
   ORDER BY DATE_TRUNC('month', t.transaction_date);
 $$;
 
-
 -- =============================================================
--- RPC: Buyer/Seller type breakdown
+-- 10. viewport_party_analysis
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_party_analysis(
   min_lat FLOAT,
@@ -274,10 +425,8 @@ AS $$
   LIMIT 20;
 $$;
 
-
 -- =============================================================
--- RPC: Year-over-year price change for viewport
--- Compares last 12 months avg to previous 12 months avg
+-- 11. viewport_yoy_change
 -- =============================================================
 CREATE OR REPLACE FUNCTION viewport_yoy_change(
   min_lat FLOAT,
@@ -335,22 +484,3 @@ AS $$
     p.cnt AS previous_count
   FROM current_period c, previous_period p;
 $$;
-
-
--- =============================================================
--- Indexes to support correlation queries efficiently
--- =============================================================
-CREATE INDEX IF NOT EXISTS idx_transactions_lat_lng
-  ON transactions (lat, lng);
-
-CREATE INDEX IF NOT EXISTS idx_transactions_floor
-  ON transactions (floor)
-  WHERE floor IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_transactions_rooms
-  ON transactions (rooms)
-  WHERE rooms IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_transactions_market_type
-  ON transactions (market_type)
-  WHERE market_type IS NOT NULL;
