@@ -21,7 +21,7 @@ export function LocateMe({ onLocate }: LocateMeProps) {
   return (
     <button
       onClick={handleClick}
-      className="absolute bottom-8 right-4 z-10 bg-white rounded-full p-3 shadow-lg hover:bg-gray-50 transition-colors group"
+      className="absolute bottom-8 left-4 z-10 bg-white rounded-full p-3 shadow-lg hover:bg-gray-50 transition-colors group"
       title="Pokaz obok mnie"
     >
       <svg

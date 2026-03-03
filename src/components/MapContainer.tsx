@@ -43,8 +43,8 @@ export function MapContainer({
         defaultZoom={DEFAULT_ZOOM}
         center={center || undefined}
         gestureHandling="greedy"
-        disableDefaultUI={false}
-        zoomControl={true}
+        disableDefaultUI={true}
+        zoomControl={false}
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
