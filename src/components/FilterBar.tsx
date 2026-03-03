@@ -26,8 +26,6 @@ const typeColors: Record<string, string> = {
   garaz: "#6b7280",
   inne: "#d97706",
   handlowoUslugowa: "#9333ea",
-  biurowa: "#0891b2",
-  produkcyjna: "#dc2626",
 };
 
 const typeLabels: Record<string, string> = {
@@ -35,8 +33,6 @@ const typeLabels: Record<string, string> = {
   garaz: "Garaz",
   inne: "Inne",
   handlowoUslugowa: "Handlowo-uslugowa",
-  biurowa: "Biurowa",
-  produkcyjna: "Produkcyjna",
 };
 
 const functionTypeFilters = [

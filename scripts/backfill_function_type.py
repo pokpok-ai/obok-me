@@ -2,143 +2,152 @@
 """
 Backfill function_type column from the lokale parquet file.
 
-The function_type column was added via ALTER TABLE AFTER the initial data import,
-so all values are NULL. This script reads lok_funkcja from the parquet and updates
-matching rows in Supabase via source_id.
+Connects directly to PostgreSQL (via SUPABASE_DB_URL) and uses
+a temp table for efficient bulk UPDATE.
 
 Usage:
-  python scripts/backfill_function_type.py
+  python3 scripts/backfill_function_type.py
 """
 
 import os
-import json
 import time
-import urllib.request
-import urllib.error
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import unquote
 
 import pyarrow.parquet as pq
 import pandas as pd
+import psycopg2
+from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 
 # Load .env
 load_dotenv(Path(__file__).parent.parent / ".env.local")
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-TABLE_NAME = "transactions"
+DB_URL = os.environ.get("SUPABASE_DB_URL")
 PARQUET_FILE = Path(__file__).parent.parent / "data" / "0_transakcje_ceny_lokale.parquet"
-
-# Batch size for IN filter (URL length limit ~8KB, so ~100 IDs per batch)
-BATCH_SIZE = 100
-MAX_WORKERS = 4
-
-
-def patch_batch(source_ids: list[str], function_type: str, batch_idx: int) -> tuple[int, int, str]:
-    """PATCH function_type for a batch of source_ids."""
-    # Build URL with IN filter
-    ids_csv = ",".join(f'"{sid}"' for sid in source_ids)
-    url = f"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?source_id=in.({ids_csv})"
-
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal",
-    }
-
-    body = json.dumps({"function_type": function_type}).encode("utf-8")
-    req = urllib.request.Request(url, data=body, headers=headers, method="PATCH")
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return (batch_idx, len(source_ids), "")
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8", errors="replace")[:300]
-        return (batch_idx, 0, f"HTTP {e.code}: {err_body}")
-    except Exception as e:
-        return (batch_idx, 0, str(e)[:200])
+BATCH_SIZE = 5000
 
 
 def main():
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        print("Error: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set")
+    if not DB_URL:
+        print("Error: SUPABASE_DB_URL not set in .env.local")
         return
 
     if not PARQUET_FILE.exists():
         print(f"Error: Parquet file not found: {PARQUET_FILE}")
         return
 
-    # Read only the columns we need
+    # Read parquet
     print(f"Reading parquet: {PARQUET_FILE}")
     pf = pq.ParquetFile(str(PARQUET_FILE))
-
-    # Check which columns exist
     schema_names = [f.name for f in pf.schema_arrow]
-    if "lok_funkcja" not in schema_names:
-        print("Error: lok_funkcja column not found in parquet")
-        return
 
     id_col = "tran_lokalny_id_iip" if "tran_lokalny_id_iip" in schema_names else "gid"
-    print(f"  Using ID column: {id_col}")
+    cols = [id_col, "lok_funkcja"]
+    if "teryt" in schema_names:
+        cols.append("teryt")
 
-    # Read only needed columns
-    table = pf.read(columns=[id_col, "lok_funkcja"])
+    table = pf.read(columns=cols)
     df = table.to_pandas()
 
-    # Drop rows without function_type or source_id
+    # Filter: drop missing, keep Warsaw only (teryt starts with 1465)
     df = df.dropna(subset=[id_col, "lok_funkcja"])
     df = df[df["lok_funkcja"].str.strip() != ""]
+    if "teryt" in df.columns:
+        df = df[df["teryt"].str.startswith("1465", na=False)]
 
-    print(f"  Rows with function_type: {len(df):,}")
-    print(f"  Unique function_types: {df['lok_funkcja'].value_counts().to_dict()}")
+    print(f"  Warsaw rows with function_type: {len(df):,}")
+    print(f"  Distribution: {df['lok_funkcja'].value_counts().to_dict()}")
 
-    # Group by function_type
-    grouped = df.groupby("lok_funkcja")[id_col].apply(list).to_dict()
+    # Prepare (source_id, function_type) pairs
+    pairs = list(zip(df[id_col].astype(str), df["lok_funkcja"]))
+    print(f"  Total pairs to update: {len(pairs):,}")
 
-    total_updated = 0
-    total_errors = 0
-    start_time = time.time()
+    # Connect to PostgreSQL
+    # Resolve hostname to IP first (Python DNS may fail in some envs)
+    import re
+    import subprocess
+    db_url = DB_URL
+    m = re.search(r'@([^:/@]+)', db_url)
+    if m:
+        hostname = m.group(1)
+        try:
+            import socket
+            socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            print(f"  Python DNS failed for {hostname}, resolving via dig...")
+            ip = subprocess.check_output(
+                ["dig", "+short", hostname], text=True
+            ).strip().split("\n")[-1]
+            print(f"  Resolved to {ip}")
+            db_url = db_url.replace(hostname, ip)
 
-    for func_type, source_ids in grouped.items():
-        source_ids = [str(sid) for sid in source_ids]
-        print(f"\nUpdating {len(source_ids):,} rows with function_type='{func_type}'...")
+    print(f"Connecting to database...")
+    conn = psycopg2.connect(db_url, sslmode="require")
+    conn.autocommit = False
+    cur = conn.cursor()
 
-        # Split into batches
-        batches = []
-        for i in range(0, len(source_ids), BATCH_SIZE):
-            batches.append(source_ids[i:i + BATCH_SIZE])
+    try:
+        # Create temp table
+        cur.execute("""
+            CREATE TEMP TABLE ft_backfill (
+                source_id TEXT,
+                function_type TEXT
+            ) ON COMMIT DROP;
+        """)
 
-        updated = 0
-        errors = 0
+        # Bulk insert into temp table
+        print("Inserting into temp table...")
+        start = time.time()
+        for i in range(0, len(pairs), BATCH_SIZE):
+            batch = pairs[i:i + BATCH_SIZE]
+            execute_values(cur, "INSERT INTO ft_backfill (source_id, function_type) VALUES %s", batch)
+            done = min(i + BATCH_SIZE, len(pairs))
+            print(f"\r  Inserted {done:,}/{len(pairs):,} ({done * 100 // len(pairs)}%)", end="", flush=True)
+        print(f"\n  Temp table ready ({time.time() - start:.1f}s)")
 
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = {}
-            for idx, batch in enumerate(batches):
-                f = executor.submit(patch_batch, batch, func_type, idx)
-                futures[f] = idx
+        # Create index on temp table for faster join
+        print("Creating index on temp table...")
+        cur.execute("CREATE INDEX ON ft_backfill (source_id);")
 
-            for f in as_completed(futures):
-                batch_idx, count, err = f.result()
-                if err:
-                    errors += 1
-                    if errors <= 3:
-                        print(f"\n  Batch {batch_idx} error: {err}")
-                else:
-                    updated += count
+        # Run the UPDATE
+        print("Running UPDATE transactions FROM ft_backfill...")
+        start = time.time()
+        cur.execute("""
+            UPDATE transactions t
+            SET function_type = b.function_type
+            FROM ft_backfill b
+            WHERE t.source_id = b.source_id
+              AND t.property_type = 'apartment';
+        """)
+        updated = cur.rowcount
+        elapsed = time.time() - start
+        print(f"  Updated {updated:,} rows in {elapsed:.1f}s")
 
-                print(f"\r  {func_type}: {updated:,}/{len(source_ids):,} "
-                      f"({updated * 100 // max(1, len(source_ids))}%) errors: {errors}",
-                      end="", flush=True)
+        # Commit
+        conn.commit()
+        print("\nCommitted successfully!")
 
-        total_updated += updated
-        total_errors += errors
-        print()
+        # Verify
+        cur.execute("""
+            SELECT function_type, COUNT(*)
+            FROM transactions
+            WHERE property_type = 'apartment'
+            GROUP BY function_type
+            ORDER BY COUNT(*) DESC;
+        """)
+        print("\nVerification — function_type distribution:")
+        for row in cur.fetchall():
+            print(f"  {row[0] or 'NULL'}: {row[1]:,}")
 
-    elapsed = time.time() - start_time
-    print(f"\nDone! Updated {total_updated:,} rows in {elapsed:.0f}s, {total_errors} batch errors")
+    except Exception as e:
+        conn.rollback()
+        print(f"\nError: {e}")
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ export default function HomePage() {
   const [filters, setFilters] = useState<Filters>({
     dateFrom: null,
     dateTo: null,
-    functionType: null,
+    functionType: "mieszkalna",
   });
   const [mapCenter, setMapCenter] = useState<{
     lat: number;

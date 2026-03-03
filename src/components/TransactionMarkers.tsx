@@ -164,12 +164,8 @@ function PricePin({ price, pricePerSqm, type, count, avgPricePerSqm }: {
   const typeColors: Record<string, string> = {
     mieszkalna: "#2563eb",
     garaz: "#6b7280",
-    uzytkowa: "#9333ea",
-    gospodarcza: "#d97706",
-    apartment: "#2563eb",
-    house: "#16a34a",
-    plot: "#d97706",
-    commercial: "#9333ea",
+    inne: "#d97706",
+    handlowoUslugowa: "#9333ea",
   };
 
   // Use price-relative coloring when we have per-sqm data, otherwise fall back to type

@@ -38,8 +38,9 @@ const rightLabels: Record<string, string> = {
 
 const functionLabels: Record<string, string> = {
   mieszkalna: "Mieszkalna",
-  uzytkowa: "Uzytkowa",
-  gospodarcza: "Gospodarcza",
+  garaz: "Garaz",
+  inne: "Inne",
+  handlowoUslugowa: "Handlowo-uslugowa",
 };
 
 export function TransactionInfoWindow({
