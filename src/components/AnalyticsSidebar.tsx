@@ -98,6 +98,46 @@ function KeyStatsCard({ stats, transactionCount, yoy }: { stats: ViewportStats |
   );
 }
 
+function WarsawComparisonCard({ viewportAvg, warsawStats }: { viewportAvg: number | null; warsawStats: WarsawStats | null }) {
+  if (!viewportAvg || !warsawStats?.avg_price_per_sqm) return null;
+
+  const wAvg = warsawStats.avg_price_per_sqm;
+  const pct = Math.round(((viewportAvg - wAvg) / wAvg) * 100);
+  const isAbove = pct > 0;
+  const maxVal = Math.max(viewportAvg, wAvg);
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs uppercase tracking-wider text-gray-400">Ten obszar vs Warszawa</p>
+        <span className={`text-lg font-bold ${isAbove ? "text-red-500" : "text-green-500"}`}>
+          {isAbove ? "+" : ""}{pct}%
+        </span>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-600 font-medium">Ten obszar</span>
+            <span className="font-semibold text-gray-900">{formatPricePerSqm(viewportAvg)}</span>
+          </div>
+          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(viewportAvg / maxVal) * 100}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-600 font-medium">Cala Warszawa</span>
+            <span className="font-semibold text-gray-900">{formatPricePerSqm(wAvg)}</span>
+          </div>
+          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-gray-400 rounded-full transition-all" style={{ width: `${(wAvg / maxVal) * 100}%` }} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function VolumeSparklineCard({ data }: { data: VolumeTrend[] }) {
   if (data.length < 2) return null;
   const recent = data.slice(-12);
@@ -406,6 +446,9 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
           {/* Key stats card */}
           <KeyStatsCard stats={stats} transactionCount={transactionCount} yoy={insights.yoyChange} />
+
+          {/* Warsaw comparison */}
+          <WarsawComparisonCard viewportAvg={stats?.avg_price_per_sqm ?? null} warsawStats={warsawStats} />
 
           {/* Market gauge */}
           {hasInsights && <MarketGauge insights={insights} />}
