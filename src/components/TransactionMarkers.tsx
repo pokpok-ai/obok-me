@@ -50,7 +50,7 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
     if (!clustererRef.current) {
       clustererRef.current = new MarkerClusterer({
         map,
-        algorithmOptions: { maxZoom: 16 },
+        algorithmOptions: { maxZoom: 12 },
         renderer: {
           render: ({ count, position }) => {
             const size = count >= 100 ? 48 : count >= 20 ? 40 : 32;

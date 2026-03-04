@@ -199,7 +199,7 @@ export function TransactionMarkers({
         type="geojson"
         data={geojson}
         cluster={true}
-        clusterMaxZoom={15}
+        clusterMaxZoom={12}
         clusterRadius={50}
       >
         <Layer {...clusterLayer} />
