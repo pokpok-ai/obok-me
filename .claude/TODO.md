@@ -55,7 +55,36 @@
 - NBP has NO JSON API for interest rates — only XML at `static.nbp.pl`, which fails server-side on Vercel
 - Rates unchanged since Oct 2023 — hardcoded fallback is fine
 
-## Pending — Phase 4
+### Address Search
+- [x] AddressSearch component — Google Places Autocomplete, Warsaw-biased, Poland-restricted
+- [x] Lifted APIProvider from MapContainer to page.tsx (so FilterBar can use Places library)
+- [x] MapContainer: added zoom prop for controlled zoom on place selection
+- [x] FilterBar: search field between function type buttons and date range
+- [x] On address select → map zooms to street level (zoom 16)
+
+## Next — Phase 4: Smart Intelligence
+
+### 4.1 Smart Comps (auto-find similar nearby transactions)
+- [ ] SQL function `nearby_comparable_transactions(lat, lng, rooms, area, func_type, radius_m, limit)` — PostGIS ST_DWithin
+- [ ] Component `ComparableTransactions.tsx` — side-by-side cards with price/m², floor, area, distance, date
+- [ ] Price adjustments: floor premium, size normalization, age discount
+- [ ] Trigger: click on transaction marker → "Porownaj z podobnymi" button in InfoWindow
+- [ ] Show in sidebar or modal overlay
+
+### 4.2 District Rankings (18 Warsaw dzielnice)
+- [ ] SQL function `district_rankings(date_from, date_to, func_type)` — group by district polygon/bounds
+- [ ] Define 18 dzielnica bounding boxes or use transaction address parsing
+- [ ] Component `DistrictRankings.tsx` — horizontal bar chart, sorted by avg price/m²
+- [ ] Show: district name, avg price/m², YoY change, transaction count
+- [ ] New tab in AnalyticsSidebar or standalone card
+
+### 4.3 Price Estimation for Address
+- [ ] SQL function `estimate_price_at_point(lat, lng, radius_m, func_type)` — p20, median, p80 of nearby transactions
+- [ ] Show estimation card after address search (below filter bar or as popup)
+- [ ] Confidence score based on number of comps within radius
+- [ ] Component `PriceEstimate.tsx` — range bar visualization (conservative → market → optimistic)
+
+## Future — Phase 5
 - [ ] PDF report export
 - [ ] AI summary (Claude API)
 

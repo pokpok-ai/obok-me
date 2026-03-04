@@ -61,6 +61,13 @@
 - **Warsaw avg rent: 85 PLN/m²/month** — hardcoded from NBP quarterly data
 - **Bank margin: 1.7%** above NBP reference rate for mortgage calc
 
+### Address Search ✅
+- [x] **AddressSearch component** — `AddressSearch.tsx` using Google Places AutocompleteService
+- [x] **APIProvider lifted** to `page.tsx` (was inside MapContainer — FilterBar couldn't access Places)
+- [x] **MapContainer zoom prop** — controlled zoom on place selection (zoom 16)
+- [x] **FilterBar placement** — search field between function type buttons and "Od" date input
+- [x] **Prerequisite**: Places API + Geocoding API enabled on Google Maps API key
+
 ### Final function_type set (4 values only)
 | function_type | DB count | % |
 |---|---|---|
@@ -75,16 +82,58 @@
 
 ---
 
-## Phase 4 — Reports & AI (NEXT)
+## Phase 4 — Smart Intelligence (NEXT)
 
 **RULE: Keep ALL existing ANALIZA functionality. Only ADD new features on top.**
 
-### 4.1 PDF Report
-- NEW: `src/lib/pdf-report.ts` (jsPDF or browser print CSS)
-- Downloadable viewport analytics PDF
-- Include: key stats, price trend, market gauge, demographics grades, affordability
+### 4.1 Smart Comps (auto-find similar nearby transactions)
 
-### 4.2 AI Summary
+**Why**: The #1 feature agents pay for. Replaces 2-3 hours of manual work per property.
+
+- SQL: `nearby_comparable_transactions(lat, lng, rooms, area, func_type, radius_m DEFAULT 1000, limit DEFAULT 6)`
+  - Uses PostGIS `ST_DWithin` to find closest transactions
+  - Filters: same function_type, rooms ±1, area ±30%, last 12 months
+  - Returns: sorted by distance, with price/m², floor, area, rooms, date, distance_m
+- Component: `ComparableTransactions.tsx` — card list with mini-map dots
+- Price adjustments: floor premium (~2% per floor above ground), size normalization
+- Trigger: button in TransactionInfoWindow → "Porownaj z podobnymi"
+- Display: overlay panel or sidebar section
+
+### 4.2 District Rankings (18 Warsaw dzielnice)
+
+**Why**: Instant city-wide perspective. "Which district is cheapest/growing fastest?"
+
+- SQL: `district_rankings(date_from, date_to, func_type)` — group transactions by dzielnica
+  - Option A: Parse address field for district name (ul. X, Mokotow)
+  - Option B: Define 18 bounding boxes and use lat/lng containment
+  - Returns: district, avg_price_per_sqm, median_price_per_sqm, yoy_change_pct, count
+- Component: `DistrictRankings.tsx` — horizontal bar chart sorted by price
+  - Color-coded bars (green=cheap, red=expensive relative to Warsaw avg)
+  - YoY growth badge per district
+  - Click district → map pans to that area
+- Placement: new tab "Dzielnice" in sidebar, or standalone card above tabs
+
+### 4.3 Price Estimation for Address
+
+**Why**: Answers "How much is my flat worth?" — the most common buyer/seller question.
+
+- SQL: `estimate_price_at_point(lat, lng, radius_m DEFAULT 500, func_type DEFAULT 'mieszkalna')`
+  - Returns: p20, median, p80 of price_per_sqm within radius, comp_count, avg_area
+  - Wider radius fallback if <5 comps found (500m → 1000m → 2000m)
+- Component: `PriceEstimate.tsx` — range bar (conservative | market | optimistic)
+  - Shows after address search selection
+  - "Szacunkowa cena: 14,200 — 15,800 — 17,400 zl/m²"
+  - Confidence indicator based on comp count (high/medium/low)
+  - Total price for 50m² flat
+- Wire: AddressSearch onSelect → also triggers price estimation
+
+## Phase 5 — Reports & AI (FUTURE)
+
+### 5.1 PDF Report
+- Downloadable viewport analytics PDF (jsPDF or browser print CSS)
+- Include: key stats, price trend, demographics grades, affordability, comps
+
+### 5.2 AI Summary
 - Send viewport stats to Claude API
 - Return 2-3 sentence market summary in Polish
 - Display in a card above the section tabs
@@ -116,8 +165,12 @@
 | Price-to-Income ratio | GUS salary + RCN price | ✅ DONE |
 | Mortgage affordability | NBP rate + viewport price | ✅ DONE |
 | Buy vs Rent | Mortgage vs NBP avg rent | ✅ DONE |
-| PDF reports | Generated from analytics | Phase 4 |
-| AI Q&A summary | Claude API | Phase 4 |
+| Address search + zoom | Google Places Autocomplete | ✅ DONE |
+| Smart Comps (nearby similar transactions) | RCN + PostGIS ST_DWithin | Phase 4 |
+| District Rankings (18 dzielnice) | RCN grouped by geography | Phase 4 |
+| Price Estimation for Address | RCN percentiles at point | Phase 4 |
+| PDF reports | Generated from analytics | Phase 5 |
+| AI Q&A summary | Claude API | Phase 5 |
 | Shadow Inventory | No listing data | ❌ NOT POSSIBLE |
 | Days on Market | No listing dates | ❌ NOT POSSIBLE |
 | Real-time alerts | RCN is batch | ❌ NOT POSSIBLE |
@@ -143,8 +196,9 @@
 | `src/hooks/useExternalData.ts` | Fetch NBP rates + GUS demographics |
 | `src/app/api/gus/route.ts` | GUS BDL proxy (unit 071412865000, 5 variables) |
 | `src/app/api/nbp/rates/route.ts` | NBP rates proxy (XML parse + hardcoded fallback) |
-| `src/components/MapContainer.tsx` | Google Maps with Warsaw bounds restriction |
-| `src/components/FilterBar.tsx` | Function type filters + date range |
+| `src/components/MapContainer.tsx` | Google Maps with Warsaw bounds restriction (zoom prop) |
+| `src/components/FilterBar.tsx` | Function type filters + address search + date range |
+| `src/components/AddressSearch.tsx` | Google Places Autocomplete (Warsaw-biased) |
 | `src/components/TransactionMarkers.tsx` | Color-coded markers by price |
 | `src/components/HeatmapLayer.tsx` | Google Maps visualization heatmap |
 | `src/components/MarketGauge.tsx` | Semicircular gauge + forecast text |
