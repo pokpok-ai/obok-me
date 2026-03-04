@@ -9,6 +9,7 @@ import { PriceTrendChart } from "./PriceTrendChart";
 import { MarketGauge } from "./MarketGauge";
 import { InterestRateCard } from "./InterestRateCard";
 import { DemographicsGrid } from "./DemographicsGrid";
+import { AffordabilityCard } from "./AffordabilityCard";
 
 interface AnalyticsSidebarProps {
   stats: ViewportStats | null;
@@ -456,6 +457,9 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
           {/* GUS Demographics */}
           <DemographicsGrid data={demographics} viewportStats={stats} />
+
+          {/* Affordability: mortgage + buy vs rent */}
+          <AffordabilityCard viewportStats={stats} nbpRates={nbpRates} demographics={demographics} />
 
           {/* Section tabs */}
           <div className="flex gap-1 overflow-x-auto pb-1">

@@ -9,8 +9,9 @@ export interface GusDemographics {
   data: {
     population: GusDataPoint[] | null;
     salary: GusDataPoint[] | null;
-    unemployment: GusDataPoint[] | null;
-    crime: GusDataPoint[] | null;
+    unemploymentRate: GusDataPoint[] | null; // % directly from GUS
+    crimeTotal: GusDataPoint[] | null;
+    crimePer1000: GusDataPoint[] | null; // per 1000 residents
   };
   fetchedAt: string;
 }
@@ -38,5 +39,5 @@ export function yoyChange(data: GusDataPoint[] | null): number | null {
   const curr = data[data.length - 1].val;
   const prev = data[data.length - 2].val;
   if (prev === 0) return null;
-  return Math.round(((curr - prev) / prev) * 100);
+  return parseFloat(((curr - prev) / prev * 100).toFixed(1));
 }
