@@ -231,49 +231,38 @@ export function TransactionMarkers({
             longitude={first.lng}
             latitude={first.lat}
             anchor="center"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              if (group.length === 1) {
-                setSelected(group[0]);
-              } else {
-                setExpandedKey(isExpanded ? null : key);
-              }
-            }}
           >
             {isExpanded ? (
               <div className="flex items-end gap-1">
                 {byType.map(([type, items]) => (
                   <div key={type} className="flex flex-col items-center gap-0.5">
                     {items.map((t) => (
-                      <div key={t.id} onClick={(e) => { e.stopPropagation(); setSelected(t); }}>
+                      <div key={t.id} className="cursor-pointer" onClick={() => setSelected(t)}>
                         <PricePin price={t.price} pricePerSqm={t.price_per_sqm} type={type} avgPricePerSqm={avgPricePerSqm} />
                       </div>
                     ))}
                   </div>
                 ))}
                 <div
-                  onClick={(e) => { e.stopPropagation(); setExpandedKey(null); }}
+                  onClick={() => setExpandedKey(null)}
                   className="px-1.5 py-0.5 rounded-full bg-gray-700 text-white text-[10px] font-bold shadow-lg cursor-pointer mb-0.5"
                 >
                   ✕
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-0.5">
+              <div
+                className="flex flex-col items-center gap-0.5 cursor-pointer"
+                onClick={() => {
+                  if (group.length === 1) {
+                    setSelected(group[0]);
+                  } else {
+                    setExpandedKey(isExpanded ? null : key);
+                  }
+                }}
+              >
                 {byType.map(([type, items]) => (
-                  <div
-                    key={type}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (items.length === 1) {
-                        setSelected(items[0]);
-                      } else {
-                        setExpandedKey(key);
-                      }
-                    }}
-                  >
-                    <PricePin count={items.length} type={type} avgPricePerSqm={avgPricePerSqm} />
-                  </div>
+                  <PricePin key={type} count={items.length} type={type} avgPricePerSqm={avgPricePerSqm} />
                 ))}
               </div>
             )}
