@@ -10,6 +10,7 @@ import { MarketGauge } from "./MarketGauge";
 import { InterestRateCard } from "./InterestRateCard";
 import { DemographicsGrid } from "./DemographicsGrid";
 import { AffordabilityCard } from "./AffordabilityCard";
+import { MarketFactors } from "./MarketFactors";
 
 interface AnalyticsSidebarProps {
   stats: ViewportStats | null;
@@ -460,6 +461,9 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
           {/* Affordability: mortgage + buy vs rent */}
           <AffordabilityCard viewportStats={stats} nbpRates={nbpRates} demographics={demographics} />
+
+          {/* Market Factors: growth drivers vs decline factors */}
+          <MarketFactors demographics={demographics} nbpRates={nbpRates} viewportStats={stats} insights={insights} />
 
           {/* Section tabs */}
           <div className="flex gap-1 overflow-x-auto pb-1">

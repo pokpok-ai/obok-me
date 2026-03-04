@@ -1,6 +1,6 @@
 "use client";
 
-import type { GusDemographics } from "@/lib/gus-api";
+import type { GusDemographics, GusDataPoint } from "@/lib/gus-api";
 import { latestValue, yoyChange } from "@/lib/gus-api";
 import type { ViewportStats } from "@/types";
 import {
@@ -23,6 +23,47 @@ interface DemoCard {
   sub: string;
   grade: GradeResult | null;
   change: number | null;
+  sparkline: number[]; // last N values for mini chart
+  invertColor?: boolean; // true = lower is better (crime, unemployment)
+}
+
+/** Mini sparkline SVG — shows last N data points as a polyline */
+function Sparkline({ data, color, invertColor }: { data: number[]; color: string; invertColor?: boolean }) {
+  if (data.length < 3) return null;
+  const recent = data.slice(-10);
+  const min = Math.min(...recent);
+  const max = Math.max(...recent);
+  const range = max - min || 1;
+  const w = 64;
+  const h = 20;
+  const pad = 1;
+
+  const points = recent
+    .map((val, i) => {
+      const x = (i / (recent.length - 1)) * (w - pad * 2) + pad;
+      const y = h - pad - ((val - min) / range) * (h - pad * 2);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  // Trend direction for color
+  const trending = recent[recent.length - 1] > recent[recent.length - 2];
+  const isGood = invertColor ? !trending : trending;
+  const strokeColor = color || (isGood ? "#22c55e" : "#ef4444");
+
+  return (
+    <svg width={w} height={h} className="shrink-0">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+    </svg>
+  );
 }
 
 export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps) {
@@ -42,15 +83,20 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
       ? computePriceToIncome(avgPrice, salaryLatest.val)
       : null;
 
+  const toValues = (d: GusDataPoint[] | null): number[] =>
+    d ? d.map((p) => p.val) : [];
+
   const cards: DemoCard[] = [];
 
   if (crimeLatest) {
     cards.push({
       label: "Bezpieczenstwo",
       value: `${crimeLatest.val.toFixed(1)}/1k`,
-      sub: `przestepstw na 1000 mieszk. (${crimeLatest.year})`,
+      sub: `przestepstw/1000 mieszk.`,
       grade: gradeCrimeRate(crimeLatest.val),
       change: yoyChange(crimePer1000),
+      sparkline: toValues(crimePer1000),
+      invertColor: true,
     });
   }
 
@@ -58,9 +104,10 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
     cards.push({
       label: "Dochody",
       value: `${Math.round(salaryLatest.val).toLocaleString("pl-PL")} zl`,
-      sub: `brutto/mies. (${salaryLatest.year})`,
+      sub: `brutto/mies.`,
       grade: gradeSalary(salaryLatest.val),
       change: yoyChange(salary),
+      sparkline: toValues(salary),
     });
   }
 
@@ -68,19 +115,22 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
     cards.push({
       label: "Bezrobocie",
       value: `${unempLatest.val}%`,
-      sub: `stopa rejestrowa (${unempLatest.year})`,
+      sub: `stopa rejestrowa`,
       grade: gradeUnemployment(unempLatest.val),
       change: yoyChange(unemploymentRate),
+      sparkline: toValues(unemploymentRate),
+      invertColor: true,
     });
   }
 
-  if (priceToIncome) {
+  if (priceToIncome !== null) {
     cards.push({
       label: "Dostepnosc",
       value: `${priceToIncome}x`,
-      sub: `rocznych pensji na 50m²`,
+      sub: `pensji na 50m²`,
       grade: gradePriceToIncome(priceToIncome),
       change: null,
+      sparkline: [],
     });
   }
 
@@ -88,9 +138,10 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
     cards.push({
       label: "Populacja",
       value: formatLargeNumber(popLatest.val),
-      sub: `mieszkancow (${popLatest.year})`,
+      sub: `mieszkancow`,
       grade: null,
       change: yoyChange(population),
+      sparkline: toValues(population),
     });
   }
 
@@ -110,32 +161,45 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
               backgroundColor: card.grade?.bgColor || "#f9fafb",
             }}
           >
-            <p className="text-[11px] text-gray-500 mb-1.5 font-medium">
-              {card.label}
-            </p>
+            {/* Top row: label + sparkline */}
+            <div className="flex items-start justify-between mb-1">
+              <p className="text-[11px] text-gray-500 font-medium">
+                {card.label}
+              </p>
+              <Sparkline
+                data={card.sparkline}
+                color={card.grade?.color || "#6b7280"}
+                invertColor={card.invertColor}
+              />
+            </div>
 
-            {/* Letter grade */}
-            {card.grade && (
-              <span
-                className="text-2xl font-black"
-                style={{ color: card.grade.color }}
-              >
-                {card.grade.grade}
-              </span>
-            )}
-
-            {/* Value + YoY change */}
-            <div className="flex items-baseline gap-1.5 mt-0.5">
+            {/* Grade + value row */}
+            <div className="flex items-baseline gap-2">
+              {card.grade && (
+                <span
+                  className="text-2xl font-black leading-none"
+                  style={{ color: card.grade.color }}
+                >
+                  {card.grade.grade}
+                </span>
+              )}
               <span
                 className="text-sm font-semibold"
                 style={{ color: card.grade?.color || "#374151" }}
               >
                 {card.value}
               </span>
+            </div>
+
+            {/* Sub text + YoY */}
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <p className="text-[10px] text-gray-400 leading-tight">
+                {card.sub}
+              </p>
               {card.change !== null && (
                 <span
                   className={`text-[10px] font-medium ${
-                    card.label === "Bezpieczenstwo" || card.label === "Bezrobocie"
+                    card.invertColor
                       ? card.change > 0
                         ? "text-red-500"
                         : "text-green-500"
@@ -145,14 +209,10 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
                   }`}
                 >
                   {card.change > 0 ? "+" : ""}
-                  {card.change}% r/r
+                  {card.change}%
                 </span>
               )}
             </div>
-
-            <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-              {card.sub}
-            </p>
           </div>
         ))}
       </div>
