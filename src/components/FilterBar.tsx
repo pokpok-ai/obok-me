@@ -2,6 +2,7 @@
 
 import type { Filters, ViewportStats } from "@/types";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
+import { AddressSearch } from "./AddressSearch";
 
 interface TypeStat {
   type: string;
@@ -19,6 +20,7 @@ interface FilterBarProps {
   loading: boolean;
   onFilterChange: (filters: Filters) => void;
   onTypeClick?: (type: string) => void;
+  onPlaceSelect?: (position: { lat: number; lng: number }) => void;
 }
 
 const typeColors: Record<string, string> = {
@@ -50,6 +52,7 @@ export function FilterBar({
   loading,
   onFilterChange,
   onTypeClick,
+  onPlaceSelect,
 }: FilterBarProps) {
   return (
     <div className="absolute top-4 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
@@ -71,6 +74,9 @@ export function FilterBar({
           </button>
         ))}
       </div>
+
+      {/* Address search */}
+      {onPlaceSelect && <AddressSearch onSelect={onPlaceSelect} />}
 
       {/* Date range */}
       <div className="flex items-center gap-2 ml-auto">

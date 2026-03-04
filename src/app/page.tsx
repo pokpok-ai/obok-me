@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import { MapContainer } from "@/components/MapContainer";
 import { TransactionMarkers } from "@/components/TransactionMarkers";
 import { HeatmapLayer } from "@/components/HeatmapLayer";
@@ -25,6 +26,7 @@ export default function HomePage() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [mapZoom, setMapZoom] = useState<number | null>(null);
   const [focusedTransaction, setFocusedTransaction] = useState<Transaction | null>(null);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
 
@@ -90,7 +92,8 @@ export default function HomePage() {
   const handleBoundsChanged = useCallback(
     (b: { north: number; south: number; east: number; west: number }) => {
       setBounds(b);
-      setMapCenter(null); // release controlled center so map stays draggable
+      setMapCenter(null);
+      setMapZoom(null);
     },
     []
   );
@@ -98,6 +101,14 @@ export default function HomePage() {
   const handleLocate = useCallback(
     (position: { lat: number; lng: number }) => {
       setMapCenter(position);
+    },
+    []
+  );
+
+  const handlePlaceSelect = useCallback(
+    (position: { lat: number; lng: number }) => {
+      setMapCenter(position);
+      setMapZoom(16);
     },
     []
   );
@@ -115,7 +126,10 @@ export default function HomePage() {
     [transactions]
   );
 
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
   return (
+    <APIProvider apiKey={apiKey}>
     <main className="h-screen w-screen relative overflow-hidden">
       <FilterBar
         filters={filters}
@@ -124,8 +138,9 @@ export default function HomePage() {
         loading={loading}
         onFilterChange={setFilters}
         onTypeClick={handleTypeClick}
+        onPlaceSelect={handlePlaceSelect}
       />
-      <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter}>
+      <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
         {!heatmapEnabled && (
           <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} />
         )}
@@ -182,5 +197,6 @@ export default function HomePage() {
         Open source — non-commercial use only · <a href="mailto:ceo@xclv.com" className="underline hover:text-gray-600">ceo@xclv.com</a>
       </footer>
     </main>
+    </APIProvider>
   );
 }
