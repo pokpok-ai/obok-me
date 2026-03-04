@@ -23,6 +23,105 @@ interface MapContainerProps {
   children?: ReactNode;
 }
 
+/**
+ * SVG filter that creates a subtle hand-drawn / pencil-sketch displacement
+ * on the map canvas. Uses feTurbulence for organic noise + feDisplacementMap
+ * to warp edges, plus a subtle paper-grain overlay.
+ */
+function PencilFilter() {
+  return (
+    <svg
+      style={{ position: "absolute", width: 0, height: 0 }}
+      aria-hidden="true"
+    >
+      <defs>
+        {/* Pencil / hand-drawn edge displacement */}
+        <filter id="pencil-sketch" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.04"
+            numOctaves="4"
+            seed="2"
+            result="noise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="2.5"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+
+        {/* Paper grain texture overlay */}
+        <filter id="paper-grain" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.65"
+            numOctaves="5"
+            stitchTiles="stitch"
+            result="grain"
+          />
+          <feColorMatrix
+            type="saturate"
+            values="0"
+            in="grain"
+            result="grainGray"
+          />
+          <feBlend
+            in="SourceGraphic"
+            in2="grainGray"
+            mode="multiply"
+            result="grained"
+          />
+          <feComponentTransfer in="grained">
+            <feFuncA type="linear" slope="1" />
+          </feComponentTransfer>
+        </filter>
+
+        {/* Combined: pencil displacement + paper grain */}
+        <filter id="artistic" x="-2%" y="-2%" width="104%" height="104%">
+          {/* Step 1: pencil wobble */}
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.03"
+            numOctaves="4"
+            seed="3"
+            result="wobble"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="wobble"
+            scale="2"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="displaced"
+          />
+          {/* Step 2: paper grain */}
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.5"
+            numOctaves="4"
+            stitchTiles="stitch"
+            result="paper"
+          />
+          <feColorMatrix
+            type="saturate"
+            values="0"
+            in="paper"
+            result="paperGray"
+          />
+          <feBlend
+            in="displaced"
+            in2="paperGray"
+            mode="multiply"
+          />
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
 export function MapContainer({
   onBoundsChanged,
   center,
@@ -60,21 +159,48 @@ export function MapContainer({
   }, [center, zoom]);
 
   return (
-    <Map
-      ref={mapRef}
-      mapStyle={MAP_STYLE}
-      initialViewState={{
-        longitude: DEFAULT_CENTER.lng,
-        latitude: DEFAULT_CENTER.lat,
-        zoom: DEFAULT_ZOOM,
-      }}
-      minZoom={MIN_ZOOM}
-      maxBounds={WARSAW_BOUNDS}
-      onMoveEnd={handleMoveEnd}
-      onLoad={handleLoad}
-      style={{ width: "100%", height: "100%" }}
-    >
-      {children}
-    </Map>
+    <>
+      <PencilFilter />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+        }}
+      >
+        {/* Paper texture underlay */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            backgroundColor: "#f2ece3",
+            filter: "url(#paper-grain)",
+            opacity: 0.15,
+            pointerEvents: "none",
+          }}
+        />
+        <Map
+          ref={mapRef}
+          mapStyle={MAP_STYLE}
+          initialViewState={{
+            longitude: DEFAULT_CENTER.lng,
+            latitude: DEFAULT_CENTER.lat,
+            zoom: DEFAULT_ZOOM,
+          }}
+          minZoom={MIN_ZOOM}
+          maxBounds={WARSAW_BOUNDS}
+          onMoveEnd={handleMoveEnd}
+          onLoad={handleLoad}
+          style={{
+            width: "100%",
+            height: "100%",
+            filter: "url(#pencil-sketch)",
+          }}
+        >
+          {children}
+        </Map>
+      </div>
+    </>
   );
 }
