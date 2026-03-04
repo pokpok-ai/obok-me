@@ -132,6 +132,8 @@ export function MapContainer({
   return (
     <>
       <ArtisticFilters />
+      {/* Apply filter only to the canvas, not the marker overlays */}
+      <style>{`.maplibregl-canvas { filter: url(#sketch); }`}</style>
       <Map
         ref={mapRef}
         mapStyle={MAP_STYLE}
@@ -144,11 +146,7 @@ export function MapContainer({
         maxBounds={WARSAW_BOUNDS}
         onMoveEnd={handleMoveEnd}
         onLoad={handleLoad}
-        style={{
-          width: "100%",
-          height: "100%",
-          filter: "url(#sketch)",
-        }}
+        style={{ width: "100%", height: "100%" }}
       >
         {children}
       </Map>
