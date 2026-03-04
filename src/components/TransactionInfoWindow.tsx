@@ -12,6 +12,7 @@ import {
 interface TransactionInfoWindowProps {
   transaction: Transaction;
   onClose: () => void;
+  onCompare?: (transaction: Transaction) => void;
 }
 
 const transactionTypeLabels: Record<string, string> = {
@@ -46,6 +47,7 @@ const functionLabels: Record<string, string> = {
 export function TransactionInfoWindow({
   transaction: t,
   onClose,
+  onCompare,
 }: TransactionInfoWindowProps) {
   return (
     <InfoWindow
@@ -126,6 +128,14 @@ export function TransactionInfoWindow({
         </div>
         {t.address && (
           <div className="text-gray-400 text-xs">{t.address}</div>
+        )}
+        {onCompare && t.price_per_sqm && (
+          <button
+            onClick={() => onCompare(t)}
+            className="mt-2 w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg py-1.5 transition-colors"
+          >
+            Porownaj z podobnymi
+          </button>
         )}
       </div>
     </InfoWindow>

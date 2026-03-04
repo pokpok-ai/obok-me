@@ -124,3 +124,41 @@ export interface InsightsData {
   partyAnalysis: PartyAnalysis[];
   yoyChange: YoYChange | null;
 }
+
+// --- Phase 4: Smart Intelligence Types ---
+
+export interface ComparableTransaction {
+  id: number;
+  price: number;
+  price_per_sqm: number;
+  transaction_date: string;
+  market_type: string | null;
+  area_sqm: number | null;
+  rooms: number | null;
+  floor: number | null;
+  address: string | null;
+  lat: number;
+  lng: number;
+  function_type: string | null;
+  distance_m: number;
+}
+
+export interface PriceEstimate {
+  p20_price_per_sqm: number;
+  median_price_per_sqm: number;
+  p80_price_per_sqm: number;
+  avg_price_per_sqm: number;
+  comp_count: number;
+  avg_area: number;
+  radius_used: number;
+}
+
+export interface DistrictRanking {
+  district: string;
+  avg_price_per_sqm: number;
+  median_price_per_sqm: number;
+  transaction_count: number;
+  avg_area: number;
+  center_lat: number;
+  center_lng: number;
+}

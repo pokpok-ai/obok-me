@@ -8,6 +8,8 @@ import { HeatmapLayer } from "@/components/HeatmapLayer";
 import { FilterBar } from "@/components/FilterBar";
 import { LocateMe } from "@/components/LocateMe";
 import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
+import { PriceEstimateCard } from "@/components/PriceEstimateCard";
+import { ComparableTransactions } from "@/components/ComparableTransactions";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
 import { useHeatmap } from "@/hooks/useHeatmap";
@@ -29,6 +31,12 @@ export default function HomePage() {
   const [mapZoom, setMapZoom] = useState<number | null>(null);
   const [focusedTransaction, setFocusedTransaction] = useState<Transaction | null>(null);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [comparisonSource, setComparisonSource] = useState<Transaction | null>(null);
+  const [priceEstimate, setPriceEstimate] = useState<{
+    lat: number;
+    lng: number;
+    address: string;
+  } | null>(null);
 
   const stableFilters = useMemo(
     () => ({
@@ -106,9 +114,25 @@ export default function HomePage() {
   );
 
   const handlePlaceSelect = useCallback(
-    (position: { lat: number; lng: number }) => {
+    (position: { lat: number; lng: number }, address?: string) => {
       setMapCenter(position);
       setMapZoom(16);
+      setPriceEstimate({ ...position, address: address || `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}` });
+    },
+    []
+  );
+
+  const handleDistrictClick = useCallback(
+    (position: { lat: number; lng: number }) => {
+      setMapCenter(position);
+      setMapZoom(14);
+    },
+    []
+  );
+
+  const handleCompare = useCallback(
+    (transaction: Transaction) => {
+      setComparisonSource(transaction);
     },
     []
   );
@@ -142,7 +166,7 @@ export default function HomePage() {
       />
       <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
         {!heatmapEnabled && (
-          <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} />
+          <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} onCompare={handleCompare} />
         )}
         {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
       </MapContainer>
@@ -182,6 +206,23 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {/* Price estimate overlay (after address search) */}
+      {priceEstimate && (
+        <PriceEstimateCard
+          lat={priceEstimate.lat}
+          lng={priceEstimate.lng}
+          funcType={filters.functionType}
+          address={priceEstimate.address}
+          onClose={() => setPriceEstimate(null)}
+        />
+      )}
+      {/* Comparable transactions overlay */}
+      {comparisonSource && (
+        <ComparableTransactions
+          source={comparisonSource}
+          onClose={() => setComparisonSource(null)}
+        />
+      )}
       <AnalyticsSidebar
         stats={stats}
         warsawStats={warsawStats}
@@ -192,6 +233,8 @@ export default function HomePage() {
         transactionCount={transactions.length}
         nbpRates={nbpRates}
         demographics={demographics}
+        filters={stableFilters}
+        onDistrictClick={handleDistrictClick}
       />
       <footer className="absolute bottom-1 left-1/2 -translate-x-1/2 z-10 text-[10px] text-gray-400 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
         Open source — non-commercial use only · <a href="mailto:ceo@xclv.com" className="underline hover:text-gray-600">ceo@xclv.com</a>

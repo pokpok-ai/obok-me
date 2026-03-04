@@ -11,6 +11,8 @@ import { InterestRateCard } from "./InterestRateCard";
 import { DemographicsGrid } from "./DemographicsGrid";
 import { AffordabilityCard } from "./AffordabilityCard";
 import { MarketFactors } from "./MarketFactors";
+import { DistrictRankings } from "./DistrictRankings";
+import type { Filters } from "@/types";
 
 interface AnalyticsSidebarProps {
   stats: ViewportStats | null;
@@ -22,6 +24,8 @@ interface AnalyticsSidebarProps {
   transactionCount: number;
   nbpRates: NbpRatesResponse | null;
   demographics: GusDemographics | null;
+  filters: Filters;
+  onDistrictClick?: (position: { lat: number; lng: number }) => void;
 }
 
 type Section = "floor" | "rooms" | "area" | "volume" | "parties";
@@ -377,7 +381,7 @@ function SectionTab({ title, active, onClick }: { title: string; active: boolean
 
 // --- Main Sidebar ---
 
-export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount, nbpRates, demographics }: AnalyticsSidebarProps) {
+export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount, nbpRates, demographics, filters, onDistrictClick }: AnalyticsSidebarProps) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("floor");
 
@@ -464,6 +468,9 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
           {/* Market Factors: growth drivers vs decline factors */}
           <MarketFactors demographics={demographics} nbpRates={nbpRates} viewportStats={stats} insights={insights} />
+
+          {/* District Rankings */}
+          <DistrictRankings filters={filters} onDistrictClick={onDistrictClick} warsawAvg={warsawStats?.avg_price_per_sqm ?? null} />
 
           {/* Section tabs */}
           <div className="flex gap-1 overflow-x-auto pb-1">

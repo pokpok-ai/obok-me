@@ -14,6 +14,9 @@ import type {
   PartyAnalysis,
   YoYChange,
   InsightsData,
+  ComparableTransaction,
+  PriceEstimate,
+  DistrictRanking,
 } from "@/types";
 
 export async function fetchTransactions(
@@ -257,4 +260,83 @@ export async function fetchAllInsights(
     partyAnalysis,
     yoyChange,
   };
+}
+
+// --- Phase 4: Smart Intelligence API ---
+
+export async function fetchNearbyComps(
+  lat: number,
+  lng: number,
+  rooms: number | null,
+  area: number | null,
+  funcType: string | null
+): Promise<ComparableTransaction[]> {
+  const { data, error } = await getSupabase().rpc("nearby_comparable_transactions", {
+    target_lat: lat,
+    target_lng: lng,
+    target_rooms: rooms,
+    target_area: area,
+    func_type: funcType || "mieszkalna",
+    radius_m: 1000,
+    max_results: 6,
+  });
+
+  if (error) {
+    console.warn("Nearby comps not available:", error.message);
+    return [];
+  }
+  return (data as ComparableTransaction[]) || [];
+}
+
+export async function fetchPriceEstimate(
+  lat: number,
+  lng: number,
+  funcType: string | null
+): Promise<PriceEstimate | null> {
+  const { data, error } = await getSupabase().rpc("estimate_price_at_point", {
+    target_lat: lat,
+    target_lng: lng,
+    radius_m: 500,
+    func_type: funcType || "mieszkalna",
+  });
+
+  if (error) {
+    console.warn("Price estimate not available:", error.message);
+    return null;
+  }
+  const row = (data as PriceEstimate[])?.[0];
+  if (!row || !row.comp_count) return null;
+  return {
+    p20_price_per_sqm: Number(row.p20_price_per_sqm),
+    median_price_per_sqm: Number(row.median_price_per_sqm),
+    p80_price_per_sqm: Number(row.p80_price_per_sqm),
+    avg_price_per_sqm: Number(row.avg_price_per_sqm),
+    comp_count: Number(row.comp_count),
+    avg_area: Number(row.avg_area),
+    radius_used: Number(row.radius_used),
+  };
+}
+
+export async function fetchDistrictRankings(
+  filters: Filters
+): Promise<DistrictRanking[]> {
+  const { data, error } = await getSupabase().rpc("district_rankings", {
+    date_from: filters.dateFrom || null,
+    date_to: filters.dateTo || null,
+    func_type: filters.functionType || "mieszkalna",
+  });
+
+  if (error) {
+    console.warn("District rankings not available:", error.message);
+    return [];
+  }
+  return ((data as DistrictRanking[]) || []).map((d) => ({
+    ...d,
+    avg_price_per_sqm: Number(d.avg_price_per_sqm),
+    median_price_per_sqm: Number(d.median_price_per_sqm),
+    transaction_count: Number(d.transaction_count),
+    avg_area: Number(d.avg_area),
+    center_lat: Number(d.center_lat),
+    center_lng: Number(d.center_lng),
+  }));
 }

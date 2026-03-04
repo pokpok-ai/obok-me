@@ -20,7 +20,7 @@ interface FilterBarProps {
   loading: boolean;
   onFilterChange: (filters: Filters) => void;
   onTypeClick?: (type: string) => void;
-  onPlaceSelect?: (position: { lat: number; lng: number }) => void;
+  onPlaceSelect?: (position: { lat: number; lng: number }, address?: string) => void;
 }
 
 const typeColors: Record<string, string> = {

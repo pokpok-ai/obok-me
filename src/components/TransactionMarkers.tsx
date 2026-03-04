@@ -11,9 +11,10 @@ interface TransactionMarkersProps {
   focusedTransaction?: Transaction | null;
   onFocusConsumed?: () => void;
   avgPricePerSqm?: number | null;
+  onCompare?: (transaction: Transaction) => void;
 }
 
-export function TransactionMarkers({ transactions, focusedTransaction, onFocusConsumed, avgPricePerSqm }: TransactionMarkersProps) {
+export function TransactionMarkers({ transactions, focusedTransaction, onFocusConsumed, avgPricePerSqm, onCompare }: TransactionMarkersProps) {
   const map = useMap();
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
@@ -138,6 +139,7 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
         <TransactionInfoWindow
           transaction={selected}
           onClose={() => setSelected(null)}
+          onCompare={onCompare}
         />
       )}
     </>
