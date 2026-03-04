@@ -10,6 +10,7 @@ import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
 import { useHeatmap } from "@/hooks/useHeatmap";
+import { useExternalData } from "@/hooks/useExternalData";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
@@ -56,6 +57,8 @@ export default function HomePage() {
     stableFilters,
     heatmapEnabled
   );
+
+  const { nbpRates, demographics } = useExternalData();
 
   const typeStats = useMemo(() => {
     const m = new Map<string, { count: number; sumPpsm: number; countPpsm: number; sumPrice: number }>();
@@ -172,6 +175,8 @@ export default function HomePage() {
         error={insightsError}
         onRefresh={refreshInsights}
         transactionCount={transactions.length}
+        nbpRates={nbpRates}
+        demographics={demographics}
       />
       <footer className="absolute bottom-1 left-1/2 -translate-x-1/2 z-10 text-[10px] text-gray-400 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full">
         Open source — non-commercial use only · <a href="mailto:ceo@xclv.com" className="underline hover:text-gray-600">ceo@xclv.com</a>

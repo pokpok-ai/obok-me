@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import type { ViewportStats, WarsawStats, InsightsData, VolumeTrend } from "@/types";
+import type { NbpRatesResponse } from "@/lib/nbp-api";
+import type { GusDemographics } from "@/lib/gus-api";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
-// WarsawStats kept in props for future use (comparison with other cities)
 import { PriceTrendChart } from "./PriceTrendChart";
 import { MarketGauge } from "./MarketGauge";
+import { InterestRateCard } from "./InterestRateCard";
+import { DemographicsGrid } from "./DemographicsGrid";
 
 interface AnalyticsSidebarProps {
   stats: ViewportStats | null;
@@ -15,6 +18,8 @@ interface AnalyticsSidebarProps {
   error: string | null;
   onRefresh: () => void;
   transactionCount: number;
+  nbpRates: NbpRatesResponse | null;
+  demographics: GusDemographics | null;
 }
 
 type Section = "floor" | "rooms" | "area" | "volume" | "parties";
@@ -370,7 +375,7 @@ function SectionTab({ title, active, onClick }: { title: string; active: boolean
 
 // --- Main Sidebar ---
 
-export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount }: AnalyticsSidebarProps) {
+export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount, nbpRates, demographics }: AnalyticsSidebarProps) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("floor");
 
@@ -445,6 +450,12 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
           {/* Price trend chart */}
           {hasInsights && <PriceTrendCard data={insights.priceTrends} />}
+
+          {/* NBP Interest Rates */}
+          <InterestRateCard data={nbpRates} />
+
+          {/* GUS Demographics */}
+          <DemographicsGrid data={demographics} viewportStats={stats} />
 
           {/* Section tabs */}
           <div className="flex gap-1 overflow-x-auto pb-1">
