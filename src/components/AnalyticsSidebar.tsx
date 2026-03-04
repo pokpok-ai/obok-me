@@ -7,6 +7,7 @@ import type { GusDemographics } from "@/lib/gus-api";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
 import { useCountUp } from "@/hooks/useCountUp";
 import { usePathLength } from "@/hooks/usePathLength";
+import { useInView } from "@/hooks/useInView";
 import { PriceTrendChart } from "./PriceTrendChart";
 import { MarketGauge } from "./MarketGauge";
 import { InterestRateCard } from "./InterestRateCard";
@@ -40,8 +41,9 @@ function formatCompact(n: number): string {
 
 // --- Card wrapper ---
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const { ref, inView } = useInView();
   return (
-    <div className={`rounded-2xl bg-white shadow-sm border border-gray-100 p-5 ${className}`}>
+    <div ref={ref} data-in-view={inView} className={`rounded-2xl bg-white shadow-sm border border-gray-100 p-5 ${className}`}>
       {children}
     </div>
   );

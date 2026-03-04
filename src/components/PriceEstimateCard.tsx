@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { PriceEstimate } from "@/types";
 import { fetchPriceEstimate } from "@/lib/api";
+import { useInView } from "@/hooks/useInView";
 
 interface PriceEstimateCardProps {
   lat: number;
@@ -13,6 +14,7 @@ interface PriceEstimateCardProps {
 }
 
 export function PriceEstimateCard({ lat, lng, funcType, address, onClose }: PriceEstimateCardProps) {
+  const { ref, inView } = useInView();
   const [estimate, setEstimate] = useState<PriceEstimate | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +32,7 @@ export function PriceEstimateCard({ lat, lng, funcType, address, onClose }: Pric
 
   if (loading) {
     return (
-      <div className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[380px]">
+      <div ref={ref} data-in-view={inView} className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[380px]">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-gray-500">Szacowanie ceny...</span>
@@ -60,7 +62,7 @@ export function PriceEstimateCard({ lat, lng, funcType, address, onClose }: Pric
   const totalP80 = Math.round(p80_price_per_sqm * avg_area);
 
   return (
-    <div className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[380px]">
+    <div ref={ref} data-in-view={inView} className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[380px]">
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-xs uppercase tracking-wider text-gray-400">

@@ -51,6 +51,23 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
       clustererRef.current = new MarkerClusterer({
         map,
         algorithmOptions: { maxZoom: 16 },
+        renderer: {
+          render: ({ count, position }) => {
+            const size = count >= 100 ? 48 : count >= 20 ? 40 : 32;
+            const half = size / 2;
+            const fontSize = size >= 40 ? 13 : 11;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+              <circle cx="${half}" cy="${half}" r="${half}" fill="#3b82f6" opacity="0.85"/>
+              <circle cx="${half}" cy="${half}" r="${half - 3}" fill="#2563eb" opacity="0.9"/>
+              <text x="50%" y="52%" text-anchor="middle" dominant-baseline="central" fill="white" font-size="${fontSize}" font-weight="bold" font-family="system-ui">${count}</text>
+            </svg>`;
+            return new google.maps.marker.AdvancedMarkerElement({
+              position,
+              content: new DOMParser().parseFromString(svg, "image/svg+xml").documentElement,
+              zIndex: count,
+            });
+          },
+        },
       });
     }
   }, [map]);
@@ -164,7 +181,7 @@ function PricePin({ price, pricePerSqm, type, count, avgPricePerSqm }: {
   avgPricePerSqm?: number | null;
 }) {
   const typeColors: Record<string, string> = {
-    mieszkalna: "#2563eb",
+    mieszkalna: "#d946ef",
     garaz: "#6b7280",
     inne: "#d97706",
     handlowoUslugowa: "#9333ea",
@@ -173,7 +190,7 @@ function PricePin({ price, pricePerSqm, type, count, avgPricePerSqm }: {
   // Use price-relative coloring when we have per-sqm data, otherwise fall back to type
   const bg = (pricePerSqm && avgPricePerSqm)
     ? getPriceColor(pricePerSqm, avgPricePerSqm)
-    : typeColors[type] || "#2563eb";
+    : typeColors[type] || "#d946ef";
 
   let label: string;
   if (count != null) {

@@ -10,6 +10,7 @@ import { LocateMe } from "@/components/LocateMe";
 import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
 import { PriceEstimateCard } from "@/components/PriceEstimateCard";
 import { ComparableTransactions } from "@/components/ComparableTransactions";
+import { SalonMarkers } from "@/components/SalonMarkers";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
 import { useHeatmap } from "@/hooks/useHeatmap";
@@ -169,6 +170,7 @@ export default function HomePage() {
           <TransactionMarkers transactions={transactions} focusedTransaction={focusedTransaction} onFocusConsumed={() => setFocusedTransaction(null)} avgPricePerSqm={stats?.avg_price_per_sqm} onCompare={handleCompare} />
         )}
         {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
+        <SalonMarkers />
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
       <button

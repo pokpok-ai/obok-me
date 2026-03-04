@@ -12,6 +12,7 @@ import {
   type GradeResult,
 } from "@/lib/demographics-scoring";
 import { usePathLength } from "@/hooks/usePathLength";
+import { useInView } from "@/hooks/useInView";
 
 interface DemographicsGridProps {
   data: GusDemographics | null;
@@ -79,6 +80,7 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps) {
+  const { ref, inView } = useInView();
   if (!data) return null;
 
   const { population, salary, unemploymentRate, crimePer1000 } = data.data;
@@ -160,7 +162,7 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
   if (cards.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
+    <div ref={ref} data-in-view={inView} className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-4">
         Warszawa — wskazniki
       </p>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { DistrictRanking, Filters } from "@/types";
 import { fetchDistrictRankings } from "@/lib/api";
+import { useInView } from "@/hooks/useInView";
 
 interface DistrictRankingsProps {
   filters: Filters;
@@ -11,6 +12,7 @@ interface DistrictRankingsProps {
 }
 
 export function DistrictRankings({ filters, onDistrictClick, warsawAvg }: DistrictRankingsProps) {
+  const { ref, inView } = useInView();
   const [districts, setDistricts] = useState<DistrictRanking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +30,7 @@ export function DistrictRankings({ filters, onDistrictClick, warsawAvg }: Distri
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
+      <div ref={ref} data-in-view={inView} className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
         <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">
           Dzielnice Warszawy
         </p>
@@ -47,7 +49,7 @@ export function DistrictRankings({ filters, onDistrictClick, warsawAvg }: Distri
   const fmt = (n: number) => n.toLocaleString("pl-PL");
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
+    <div ref={ref} data-in-view={inView} className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs uppercase tracking-wider text-gray-400">
           Dzielnice Warszawy

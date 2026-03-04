@@ -2,12 +2,14 @@
 
 import type { NbpRatesResponse } from "@/lib/nbp-api";
 import { formatRateName } from "@/lib/nbp-api";
+import { useInView } from "@/hooks/useInView";
 
 interface InterestRateCardProps {
   data: NbpRatesResponse | null;
 }
 
 export function InterestRateCard({ data }: InterestRateCardProps) {
+  const { ref, inView } = useInView();
   if (!data || data.rates.length === 0) return null;
 
   const refRate = data.rates.find((r) =>
@@ -20,10 +22,25 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
     r.name.toLowerCase().includes("depozytowa")
   );
 
-  const maxRate = lombard?.value || 7;
+  // Corridor-focused scale: spread deposit→lombard across full width
+  const depVal = deposit?.value || 0;
+  const lomVal = lombard?.value || 7;
+  const scaleMin = Math.max(0, depVal - 1);
+  const scaleMax = lomVal + 1;
+  const scaleRange = scaleMax - scaleMin || 1;
+  const pos = (v: number) => ((v - scaleMin) / scaleRange) * 100;
+
+  const rates = [deposit, refRate, lombard].filter(Boolean) as typeof data.rates;
+  const rateColors: Record<string, string> = {
+    deposit: "#22c55e",
+    ref: "#3b82f6",
+    lombard: "#f59e0b",
+  };
+  const rateType = (r: typeof rates[0]) =>
+    r === deposit ? "deposit" : r === refRate ? "ref" : "lombard";
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
+    <div ref={ref} data-in-view={inView} className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs uppercase tracking-wider text-gray-400">Stopy procentowe NBP</p>
         {refRate && (
@@ -33,62 +50,72 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
         )}
       </div>
 
-      {/* Hero rate with visual gauge */}
+      {/* Hero rate */}
       {refRate && (
-        <div className="mb-4">
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-3xl font-bold text-blue-600">
-              {refRate.value.toFixed(2)}%
-            </span>
-            <span className="text-sm text-gray-400">referencyjna</span>
-          </div>
-
-          {/* Rate corridor visualization */}
-          <div className="relative h-8 bg-gray-50 rounded-lg overflow-hidden animate-fade-in">
-            {/* Gradient bar from deposit to lombard */}
-            <div
-              className="absolute top-1 bottom-1 rounded-md"
-              style={{
-                left: `${(deposit?.value || 0) / maxRate * 100 * 0.85}%`,
-                right: `${100 - (lombard?.value || maxRate) / maxRate * 100 * 0.85}%`,
-                background: "linear-gradient(90deg, #dbeafe 0%, #3b82f6 50%, #fecaca 100%)",
-                opacity: 0.3,
-              }}
-            />
-            {/* Reference rate marker */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-blue-600 animate-fade-in"
-              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85}%`, animationDelay: "300ms" }}
-            />
-            <div
-              className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow animate-fade-in"
-              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85 - 0.75}%`, animationDelay: "300ms" }}
-            />
-            {/* Scale labels */}
-            <span className="absolute bottom-0.5 left-1 text-[9px] text-gray-400">0%</span>
-            <span className="absolute bottom-0.5 right-1 text-[9px] text-gray-400">{maxRate}%</span>
-          </div>
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="text-3xl font-bold text-blue-600">
+            {refRate.value.toFixed(2)}%
+          </span>
+          <span className="text-sm text-gray-400">referencyjna</span>
         </div>
       )}
 
-      {/* Rate bars */}
-      <div className="space-y-2.5">
-        {[deposit, refRate, lombard].filter(Boolean).map((rate, i) => (
-          <div key={rate!.name}>
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-gray-500">{formatRateName(rate!.name)}</span>
-              <span className="font-semibold text-gray-800">{rate!.value.toFixed(2)}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      {/* Corridor visualization */}
+      <div className="relative h-10 bg-gray-50 rounded-lg animate-fade-in mb-4">
+        {/* Full-width gradient corridor band */}
+        <div
+          className="absolute inset-1.5 rounded-md animate-fade-in"
+          style={{
+            background: "linear-gradient(90deg, #dcfce7 0%, #dbeafe 50%, #fef3c7 100%)",
+          }}
+        />
+        {/* Rate tick marks */}
+        {rates.map((rate, i) => {
+          const color = rateColors[rateType(rate)];
+          const p = pos(rate.value);
+          const isRef = rate === refRate;
+          return (
+            <div key={rate.name} className="animate-fade-in" style={{ animationDelay: `${(i + 1) * 150}ms` }}>
               <div
-                className="h-full rounded-full animate-bar-grow"
+                className="absolute top-0 bottom-0 w-0.5"
+                style={{ left: `${p}%`, backgroundColor: color }}
+              />
+              <div
+                className="absolute w-3 h-3 rounded-full border-2 border-white shadow"
                 style={{
-                  width: `${(rate!.value / maxRate) * 100}%`,
-                  backgroundColor: rate === refRate ? "#3b82f6" : rate === deposit ? "#22c55e" : "#f59e0b",
-                  animationDelay: `${i * 100}ms`,
+                  left: `${p}%`,
+                  top: isRef ? "2px" : "50%",
+                  transform: `translateX(-50%)${isRef ? "" : " translateY(-50%)"}`,
+                  backgroundColor: color,
+                  width: isRef ? "14px" : "10px",
+                  height: isRef ? "14px" : "10px",
                 }}
               />
+              <span
+                className="absolute text-[9px] font-semibold"
+                style={{
+                  left: `${p}%`,
+                  bottom: "1px",
+                  transform: "translateX(-50%)",
+                  color,
+                }}
+              >
+                {rate.value.toFixed(2)}%
+              </span>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Rate legend */}
+      <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+        {rates.map((rate) => (
+          <div key={rate.name} className="flex items-center gap-1">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: rateColors[rateType(rate)] }}
+            />
+            <span>{formatRateName(rate.name)}</span>
           </div>
         ))}
       </div>

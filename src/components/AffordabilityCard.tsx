@@ -6,6 +6,7 @@ import type { GusDemographics } from "@/lib/gus-api";
 import { latestValue } from "@/lib/gus-api";
 import { computeMonthlyMortgage } from "@/lib/demographics-scoring";
 import { usePathLength } from "@/hooks/usePathLength";
+import { useInView } from "@/hooks/useInView";
 
 interface AffordabilityCardProps {
   viewportStats: ViewportStats | null;
@@ -87,6 +88,7 @@ function SalaryGauge({ pct }: { pct: number }) {
 }
 
 export function AffordabilityCard({ viewportStats, nbpRates, demographics }: AffordabilityCardProps) {
+  const { ref, inView } = useInView();
   if (!viewportStats?.median_price_per_sqm) return null;
 
   const medianPricePerSqm = viewportStats.median_price_per_sqm;
@@ -114,7 +116,7 @@ export function AffordabilityCard({ viewportStats, nbpRates, demographics }: Aff
   const maxPayment = Math.max(monthlyMortgage, monthlyRent);
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
+    <div ref={ref} data-in-view={inView} className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">
         Dostepnosc mieszkania (50m²)
       </p>

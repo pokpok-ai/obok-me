@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Transaction, ComparableTransaction } from "@/types";
 import { fetchNearbyComps } from "@/lib/api";
 import { formatPLN, formatDate } from "@/lib/formatters";
+import { useInView } from "@/hooks/useInView";
 
 interface ComparableTransactionsProps {
   source: Transaction;
@@ -11,6 +12,7 @@ interface ComparableTransactionsProps {
 }
 
 export function ComparableTransactions({ source, onClose }: ComparableTransactionsProps) {
+  const { ref, inView } = useInView();
   const [comps, setComps] = useState<ComparableTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +39,7 @@ export function ComparableTransactions({ source, onClose }: ComparableTransactio
   const sourcePpsm = source.price_per_sqm || 0;
 
   return (
-    <div className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[400px] max-h-[calc(100vh-120px)] overflow-y-auto">
+    <div ref={ref} data-in-view={inView} className="absolute top-20 left-4 z-20 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 w-[400px] max-h-[calc(100vh-120px)] overflow-y-auto">
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-xs uppercase tracking-wider text-gray-400">
