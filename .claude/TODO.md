@@ -62,27 +62,30 @@
 - [x] FilterBar: search field between function type buttons and date range
 - [x] On address select → map zooms to street level (zoom 16)
 
-## Next — Phase 4: Smart Intelligence
+## Done (2026-03-04) — Phase 4: Smart Intelligence
 
 ### 4.1 Smart Comps (auto-find similar nearby transactions)
-- [ ] SQL function `nearby_comparable_transactions(lat, lng, rooms, area, func_type, radius_m, limit)` — PostGIS ST_DWithin
-- [ ] Component `ComparableTransactions.tsx` — side-by-side cards with price/m², floor, area, distance, date
-- [ ] Price adjustments: floor premium, size normalization, age discount
-- [ ] Trigger: click on transaction marker → "Porownaj z podobnymi" button in InfoWindow
-- [ ] Show in sidebar or modal overlay
+- [x] SQL function `nearby_comparable_transactions` — PostGIS ST_DWithin, rooms ±1, area ±30%, last 24 months, radius 1km
+- [x] Component `ComparableTransactions.tsx` — overlay panel with source reference card + comp list (price diff %, distance, area, rooms, floor, date)
+- [x] Trigger: "Porownaj z podobnymi" button in TransactionInfoWindow (only when price_per_sqm exists)
+- [x] Wired via onCompare prop through TransactionMarkers → page.tsx state
 
 ### 4.2 District Rankings (18 Warsaw dzielnice)
-- [ ] SQL function `district_rankings(date_from, date_to, func_type)` — group by district polygon/bounds
-- [ ] Define 18 dzielnica bounding boxes or use transaction address parsing
-- [ ] Component `DistrictRankings.tsx` — horizontal bar chart, sorted by avg price/m²
-- [ ] Show: district name, avg price/m², YoY change, transaction count
-- [ ] New tab in AnalyticsSidebar or standalone card
+- [x] SQL function `district_rankings` — 18 bounding boxes as VALUES table, grouped stats, HAVING count≥10
+- [x] Component `DistrictRankings.tsx` — horizontal bar chart, color-coded (green→red), % vs Warsaw avg
+- [x] Click district → map pans + zooms to district center (zoom 14)
+- [x] Rendered as card in AnalyticsSidebar (after MarketFactors, before section tabs)
 
 ### 4.3 Price Estimation for Address
-- [ ] SQL function `estimate_price_at_point(lat, lng, radius_m, func_type)` — p20, median, p80 of nearby transactions
-- [ ] Show estimation card after address search (below filter bar or as popup)
-- [ ] Confidence score based on number of comps within radius
-- [ ] Component `PriceEstimate.tsx` — range bar visualization (conservative → market → optimistic)
+- [x] SQL function `estimate_price_at_point` — plpgsql with widening radius (500→1000→2000m), p20/median/p80/avg
+- [x] Component `PriceEstimateCard.tsx` — overlay after address search with range bar, confidence indicator, total price
+- [x] Triggered automatically on address search (handlePlaceSelect sets priceEstimate state)
+- [x] Close button to dismiss
+
+**Key decisions:**
+- Districts defined by bounding boxes (not address parsing — addresses have no district name)
+- Comps filter: ±1 room, ±30% area, last 24 months, 1km radius, max 6 results
+- Price estimate uses widening radius fallback (min 5 comps), confidence: high (≥50), medium (≥20), low (<20)
 
 ## Future — Phase 5
 - [ ] PDF report export

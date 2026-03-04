@@ -82,7 +82,7 @@
 
 ---
 
-## Phase 4 — Smart Intelligence (NEXT)
+## What's Done (Phase 4) ✅
 
 **RULE: Keep ALL existing ANALIZA functionality. Only ADD new features on top.**
 
@@ -166,9 +166,9 @@
 | Mortgage affordability | NBP rate + viewport price | ✅ DONE |
 | Buy vs Rent | Mortgage vs NBP avg rent | ✅ DONE |
 | Address search + zoom | Google Places Autocomplete | ✅ DONE |
-| Smart Comps (nearby similar transactions) | RCN + PostGIS ST_DWithin | Phase 4 |
-| District Rankings (18 dzielnice) | RCN grouped by geography | Phase 4 |
-| Price Estimation for Address | RCN percentiles at point | Phase 4 |
+| Smart Comps (nearby similar transactions) | RCN + PostGIS ST_DWithin | ✅ DONE |
+| District Rankings (18 dzielnice) | RCN grouped by geography | ✅ DONE |
+| Price Estimation for Address | RCN percentiles at point | ✅ DONE |
 | PDF reports | Generated from analytics | Phase 5 |
 | AI Q&A summary | Claude API | Phase 5 |
 | Shadow Inventory | No listing data | ❌ NOT POSSIBLE |
@@ -208,3 +208,6 @@
 | `src/components/DemographicsGrid.tsx` | Letter-graded demographic cards (2x3 grid) |
 | `src/components/AffordabilityCard.tsx` | Mortgage calc + buy vs rent + salary % |
 | `src/components/LocateMe.tsx` | Geolocation button (bottom-left) |
+| `src/components/ComparableTransactions.tsx` | Smart Comps overlay (nearby similar transactions) |
+| `src/components/PriceEstimateCard.tsx` | Price estimate overlay (P20/median/P80 after address search) |
+| `src/components/DistrictRankings.tsx` | 18 Warsaw districts ranked by avg price/m² |
