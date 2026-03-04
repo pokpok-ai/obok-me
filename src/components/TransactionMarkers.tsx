@@ -91,34 +91,32 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
             key={key}
             position={{ lat: first.lat, lng: first.lng }}
             ref={(marker) => setMarkerRef(marker, key)}
-            onClick={() => setSelected(group[0])}
             zIndex={isExpanded ? 1000 : undefined}
           >
             {isExpanded ? (
-              <div className="flex items-end gap-1" >
+              <div className="flex items-end gap-1">
                 {byType.map(([type, items]) => (
                   <div key={type} className="flex flex-col items-center gap-0.5">
                     {items.map((t) => (
-                      <div key={t.id} onClick={(e) => { e.stopPropagation(); setSelected(t); }}>
+                      <div key={t.id} onClick={() => setSelected(t)}>
                         <PricePin price={t.price} pricePerSqm={t.price_per_sqm} type={type} avgPricePerSqm={avgPricePerSqm} />
                       </div>
                     ))}
                   </div>
                 ))}
                 <div
-                  onClick={(e) => { e.stopPropagation(); setExpandedKey(null); }}
+                  onClick={() => setExpandedKey(null)}
                   className="px-1.5 py-0.5 rounded-full bg-gray-700 text-white text-[10px] font-bold shadow-lg cursor-pointer mb-0.5"
                 >
                   ✕
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-0.5" >
+              <div className="flex flex-col items-center gap-0.5">
                 {byType.map(([type, items]) => (
                   <div
                     key={type}
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       if (items.length === 1) {
                         setSelected(items[0]);
                       } else {
@@ -126,7 +124,7 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
                       }
                     }}
                   >
-                    <PricePin count={items.length} type={type} avgPricePerSqm={avgPricePerSqm} />
+                    <PricePin count={items.length > 1 ? items.length : undefined} price={items.length === 1 ? items[0].price : undefined} pricePerSqm={items.length === 1 ? items[0].price_per_sqm : undefined} type={type} avgPricePerSqm={avgPricePerSqm} />
                   </div>
                 ))}
               </div>
