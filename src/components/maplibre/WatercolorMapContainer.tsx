@@ -12,8 +12,8 @@ const MAX_ZOOM = 18;
 const WARSAW_BOUNDS: [number, number, number, number] = [20.75, 52.05, 21.35, 52.45];
 
 /**
- * Hybrid style: Stamen Watercolor raster base + OpenFreeMap vector overlay
- * for buildings, road labels, and place names.
+ * Base style: Stamen Watercolor raster only.
+ * Vector overlays (buildings, labels) added via JSX Source/Layer children.
  */
 const WATERCOLOR_STYLE: StyleSpecification = {
   version: 8,
@@ -28,119 +28,15 @@ const WATERCOLOR_STYLE: StyleSpecification = {
       attribution:
         'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under ODbL.',
     },
-    openmaptiles: {
-      type: "vector",
-      url: "https://tiles.openfreemap.org/planet",
-    },
   },
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
   layers: [
-    // Base: watercolor raster
     {
       id: "watercolor-tiles",
       type: "raster",
       source: "watercolor",
       minzoom: 0,
       maxzoom: 22,
-    },
-    // Overlay: building footprints (warm semi-transparent)
-    {
-      id: "buildings-fill",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "building",
-      minzoom: 14,
-      paint: {
-        "fill-color": "#d5c9bc",
-        "fill-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          14, 0.3,
-          16, 0.55,
-        ],
-      },
-    },
-    // Overlay: building outlines
-    {
-      id: "buildings-outline",
-      type: "line",
-      source: "openmaptiles",
-      "source-layer": "building",
-      minzoom: 14,
-      paint: {
-        "line-color": "#b8a898",
-        "line-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          14, 0.3,
-          17, 0.8,
-        ],
-        "line-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          14, 0.3,
-          16, 0.6,
-        ],
-      },
-    },
-    // Overlay: road labels (warm brown)
-    {
-      id: "road-labels",
-      type: "symbol",
-      source: "openmaptiles",
-      "source-layer": "transportation_name",
-      minzoom: 14,
-      layout: {
-        "text-field": ["get", "name"],
-        "text-size": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          14, 10,
-          18, 13,
-        ],
-        "text-font": ["Noto Sans Regular"],
-        "symbol-placement": "line",
-        "text-max-angle": 30,
-        "text-padding": 2,
-      },
-      paint: {
-        "text-color": "#5c4a3a",
-        "text-halo-color": "rgba(242, 236, 227, 0.8)",
-        "text-halo-width": 1.5,
-        "text-opacity": 0.8,
-      },
-    },
-    // Overlay: place labels (city, district names)
-    {
-      id: "place-labels",
-      type: "symbol",
-      source: "openmaptiles",
-      "source-layer": "place",
-      minzoom: 10,
-      layout: {
-        "text-field": ["get", "name"],
-        "text-size": [
-          "match",
-          ["get", "class"],
-          "city", 18,
-          "town", 14,
-          "suburb", 12,
-          "neighbourhood", 11,
-          10,
-        ],
-        "text-font": ["Noto Sans Bold"],
-        "text-padding": 10,
-        "text-anchor": "center",
-      },
-      paint: {
-        "text-color": "#3d2e1f",
-        "text-halo-color": "rgba(242, 236, 227, 0.85)",
-        "text-halo-width": 2,
-      },
     },
   ],
 };
@@ -202,6 +98,72 @@ export function WatercolorMapContainer({
       onLoad={handleMoveEnd}
       style={{ width: "100%", height: "100%" }}
     >
+      {/* Vector overlay: building footprints + labels from OpenFreeMap */}
+      <Source
+        id="openmaptiles"
+        type="vector"
+        url="https://tiles.openfreemap.org/planet"
+      >
+        <Layer
+          id="buildings-fill"
+          type="fill"
+          source-layer="building"
+          minzoom={14}
+          paint={{
+            "fill-color": "#d5c9bc",
+            "fill-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0.3, 16, 0.55],
+          }}
+        />
+        <Layer
+          id="buildings-outline"
+          type="line"
+          source-layer="building"
+          minzoom={14}
+          paint={{
+            "line-color": "#b8a898",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.3, 17, 0.8],
+            "line-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0.3, 16, 0.6],
+          }}
+        />
+        <Layer
+          id="road-labels"
+          type="symbol"
+          source-layer="transportation_name"
+          minzoom={14}
+          layout={{
+            "text-field": ["get", "name"],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 14, 10, 18, 13],
+            "text-font": ["Noto Sans Regular"],
+            "symbol-placement": "line",
+            "text-max-angle": 30,
+            "text-padding": 2,
+          }}
+          paint={{
+            "text-color": "#5c4a3a",
+            "text-halo-color": "rgba(242, 236, 227, 0.8)",
+            "text-halo-width": 1.5,
+            "text-opacity": 0.8,
+          }}
+        />
+        <Layer
+          id="place-labels"
+          type="symbol"
+          source-layer="place"
+          minzoom={10}
+          layout={{
+            "text-field": ["get", "name"],
+            "text-size": ["match", ["get", "class"], "city", 18, "town", 14, "suburb", 12, "neighbourhood", 11, 10],
+            "text-font": ["Noto Sans Bold"],
+            "text-padding": 10,
+            "text-anchor": "center",
+          }}
+          paint={{
+            "text-color": "#3d2e1f",
+            "text-halo-color": "rgba(242, 236, 227, 0.85)",
+            "text-halo-width": 2,
+          }}
+        />
+      </Source>
       {children}
     </Map>
   );
