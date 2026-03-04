@@ -24,41 +24,38 @@ interface MapContainerProps {
 }
 
 /**
- * SVG filter that creates a subtle hand-drawn / pencil-sketch displacement
- * on the map canvas. Uses feTurbulence for organic noise + feDisplacementMap
- * to warp edges, plus a subtle paper-grain overlay.
+ * SVG filters for artistic map rendering.
+ * - "sketch": hand-drawn wobble + paper grain + slight desaturation
  */
-function PencilFilter() {
+function ArtisticFilters() {
   return (
     <svg
       style={{ position: "absolute", width: 0, height: 0 }}
       aria-hidden="true"
     >
       <defs>
-        {/* Pencil / hand-drawn edge displacement */}
-        <filter id="pencil-sketch" x="0%" y="0%" width="100%" height="100%">
+        <filter id="sketch" x="-3%" y="-3%" width="106%" height="106%">
+          {/* 1. Hand-drawn edge wobble */}
           <feTurbulence
             type="turbulence"
-            baseFrequency="0.04"
-            numOctaves="4"
-            seed="2"
-            result="noise"
+            baseFrequency="0.015 0.015"
+            numOctaves="3"
+            seed="5"
+            result="wobble"
           />
           <feDisplacementMap
             in="SourceGraphic"
-            in2="noise"
-            scale="2.5"
+            in2="wobble"
+            scale="4"
             xChannelSelector="R"
             yChannelSelector="G"
+            result="displaced"
           />
-        </filter>
-
-        {/* Paper grain texture overlay */}
-        <filter id="paper-grain" x="0%" y="0%" width="100%" height="100%">
+          {/* 2. Paper grain texture */}
           <feTurbulence
             type="fractalNoise"
-            baseFrequency="0.65"
-            numOctaves="5"
+            baseFrequency="0.8"
+            numOctaves="4"
             stitchTiles="stitch"
             result="grain"
           />
@@ -66,55 +63,29 @@ function PencilFilter() {
             type="saturate"
             values="0"
             in="grain"
-            result="grainGray"
+            result="grainBW"
           />
+          {/* Make grain lighter so it doesn't darken too much */}
+          <feComponentTransfer in="grainBW" result="grainLight">
+            <feFuncR type="linear" slope="0.15" intercept="0.85" />
+            <feFuncG type="linear" slope="0.15" intercept="0.85" />
+            <feFuncB type="linear" slope="0.15" intercept="0.85" />
+          </feComponentTransfer>
+          {/* 3. Blend displaced map with grain */}
           <feBlend
-            in="SourceGraphic"
-            in2="grainGray"
+            in="displaced"
+            in2="grainLight"
             mode="multiply"
             result="grained"
           />
-          <feComponentTransfer in="grained">
-            <feFuncA type="linear" slope="1" />
-          </feComponentTransfer>
-        </filter>
-
-        {/* Combined: pencil displacement + paper grain */}
-        <filter id="artistic" x="-2%" y="-2%" width="104%" height="104%">
-          {/* Step 1: pencil wobble */}
-          <feTurbulence
-            type="turbulence"
-            baseFrequency="0.03"
-            numOctaves="4"
-            seed="3"
-            result="wobble"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="wobble"
-            scale="2"
-            xChannelSelector="R"
-            yChannelSelector="G"
-            result="displaced"
-          />
-          {/* Step 2: paper grain */}
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.5"
-            numOctaves="4"
-            stitchTiles="stitch"
-            result="paper"
-          />
+          {/* 4. Slight warmth + desaturation for aged feel */}
           <feColorMatrix
-            type="saturate"
-            values="0"
-            in="paper"
-            result="paperGray"
-          />
-          <feBlend
-            in="displaced"
-            in2="paperGray"
-            mode="multiply"
+            in="grained"
+            type="matrix"
+            values="0.95 0.05 0.02 0 0.02
+                    0.02 0.92 0.04 0 0.01
+                    0.01 0.03 0.88 0 0.00
+                    0    0    0    1 0"
           />
         </filter>
       </defs>
@@ -160,47 +131,27 @@ export function MapContainer({
 
   return (
     <>
-      <PencilFilter />
-      <div
+      <ArtisticFilters />
+      <Map
+        ref={mapRef}
+        mapStyle={MAP_STYLE}
+        initialViewState={{
+          longitude: DEFAULT_CENTER.lng,
+          latitude: DEFAULT_CENTER.lat,
+          zoom: DEFAULT_ZOOM,
+        }}
+        minZoom={MIN_ZOOM}
+        maxBounds={WARSAW_BOUNDS}
+        onMoveEnd={handleMoveEnd}
+        onLoad={handleLoad}
         style={{
           width: "100%",
           height: "100%",
-          position: "relative",
+          filter: "url(#sketch)",
         }}
       >
-        {/* Paper texture underlay */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            backgroundColor: "#f2ece3",
-            filter: "url(#paper-grain)",
-            opacity: 0.15,
-            pointerEvents: "none",
-          }}
-        />
-        <Map
-          ref={mapRef}
-          mapStyle={MAP_STYLE}
-          initialViewState={{
-            longitude: DEFAULT_CENTER.lng,
-            latitude: DEFAULT_CENTER.lat,
-            zoom: DEFAULT_ZOOM,
-          }}
-          minZoom={MIN_ZOOM}
-          maxBounds={WARSAW_BOUNDS}
-          onMoveEnd={handleMoveEnd}
-          onLoad={handleLoad}
-          style={{
-            width: "100%",
-            height: "100%",
-            filter: "url(#pencil-sketch)",
-          }}
-        >
-          {children}
-        </Map>
-      </div>
+        {children}
+      </Map>
     </>
   );
 }
