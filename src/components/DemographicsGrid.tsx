@@ -27,40 +27,44 @@ interface DemoCard {
   invertColor?: boolean; // true = lower is better (crime, unemployment)
 }
 
-/** Mini sparkline SVG — shows last N data points as a polyline */
-function Sparkline({ data, color, invertColor }: { data: number[]; color: string; invertColor?: boolean }) {
+/** Mini sparkline SVG with area fill — shows last N data points */
+function Sparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 3) return null;
-  const recent = data.slice(-10);
+  const recent = data.slice(-12);
   const min = Math.min(...recent);
   const max = Math.max(...recent);
   const range = max - min || 1;
-  const w = 64;
-  const h = 20;
-  const pad = 1;
+  const w = 80;
+  const h = 28;
+  const pad = 2;
 
-  const points = recent
-    .map((val, i) => {
-      const x = (i / (recent.length - 1)) * (w - pad * 2) + pad;
-      const y = h - pad - ((val - min) / range) * (h - pad * 2);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const coords = recent.map((val, i) => ({
+    x: (i / (recent.length - 1)) * (w - pad * 2) + pad,
+    y: h - pad - ((val - min) / range) * (h - pad * 2 - 2),
+  }));
 
-  // Trend direction for color
-  const trending = recent[recent.length - 1] > recent[recent.length - 2];
-  const isGood = invertColor ? !trending : trending;
-  const strokeColor = color || (isGood ? "#22c55e" : "#ef4444");
+  const linePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
+  // Area fill path
+  const areaPath = `M ${coords[0].x},${h} ${coords.map((c) => `L ${c.x},${c.y}`).join(" ")} L ${coords[coords.length - 1].x},${h} Z`;
 
   return (
     <svg width={w} height={h} className="shrink-0">
+      <path d={areaPath} fill={color} opacity={0.1} />
       <polyline
-        points={points}
+        points={linePoints}
         fill="none"
-        stroke={strokeColor}
-        strokeWidth="1.5"
+        stroke={color}
+        strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
-        opacity={0.7}
+        opacity={0.6}
+      />
+      {/* End dot */}
+      <circle
+        cx={coords[coords.length - 1].x}
+        cy={coords[coords.length - 1].y}
+        r="2.5"
+        fill={color}
       />
     </svg>
   );
@@ -169,7 +173,6 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
               <Sparkline
                 data={card.sparkline}
                 color={card.grade?.color || "#6b7280"}
-                invertColor={card.invertColor}
               />
             </div>
 

@@ -10,17 +10,17 @@ interface InterestRateCardProps {
 export function InterestRateCard({ data }: InterestRateCardProps) {
   if (!data || data.rates.length === 0) return null;
 
-  // Find the reference rate (stopa referencyjna)
   const refRate = data.rates.find((r) =>
     r.name.toLowerCase().includes("referencyjna")
   );
-
-  // Show key rates: referencyjna, lombardowa, depozytowa
-  const keyRates = data.rates.filter((r) =>
-    ["referencyjna", "lombardowa", "depozytowa"].some((k) =>
-      r.name.toLowerCase().includes(k)
-    )
+  const lombard = data.rates.find((r) =>
+    r.name.toLowerCase().includes("lombardowa")
   );
+  const deposit = data.rates.find((r) =>
+    r.name.toLowerCase().includes("depozytowa")
+  );
+
+  const maxRate = lombard?.value || 7;
 
   return (
     <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-5">
@@ -33,33 +33,63 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
         )}
       </div>
 
-      {/* Hero rate */}
+      {/* Hero rate with visual gauge */}
       {refRate && (
         <div className="mb-4">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-2 mb-3">
             <span className="text-3xl font-bold text-blue-600">
               {refRate.value.toFixed(2)}%
             </span>
             <span className="text-sm text-gray-400">referencyjna</span>
           </div>
+
+          {/* Rate corridor visualization */}
+          <div className="relative h-8 bg-gray-50 rounded-lg overflow-hidden">
+            {/* Gradient bar from deposit to lombard */}
+            <div
+              className="absolute top-1 bottom-1 rounded-md"
+              style={{
+                left: `${(deposit?.value || 0) / maxRate * 100 * 0.85}%`,
+                right: `${100 - (lombard?.value || maxRate) / maxRate * 100 * 0.85}%`,
+                background: "linear-gradient(90deg, #dbeafe 0%, #3b82f6 50%, #fecaca 100%)",
+                opacity: 0.3,
+              }}
+            />
+            {/* Reference rate marker */}
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-blue-600"
+              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85}%` }}
+            />
+            <div
+              className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow"
+              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85 - 0.75}%` }}
+            />
+            {/* Scale labels */}
+            <span className="absolute bottom-0.5 left-1 text-[9px] text-gray-400">0%</span>
+            <span className="absolute bottom-0.5 right-1 text-[9px] text-gray-400">{maxRate}%</span>
+          </div>
         </div>
       )}
 
-      {/* Other key rates */}
-      <div className="space-y-2">
-        {keyRates
-          .filter((r) => r !== refRate)
-          .map((rate) => (
-            <div
-              key={rate.name}
-              className="flex items-center justify-between text-sm"
-            >
-              <span className="text-gray-600">{formatRateName(rate.name)}</span>
-              <span className="font-semibold text-gray-900">
-                {rate.value.toFixed(2)}%
-              </span>
+      {/* Rate bars */}
+      <div className="space-y-2.5">
+        {[deposit, refRate, lombard].filter(Boolean).map((rate) => (
+          <div key={rate!.name}>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-gray-500">{formatRateName(rate!.name)}</span>
+              <span className="font-semibold text-gray-800">{rate!.value.toFixed(2)}%</span>
             </div>
-          ))}
+            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${(rate!.value / maxRate) * 100}%`,
+                  backgroundColor: rate === refRate ? "#3b82f6" : rate === deposit ? "#22c55e" : "#f59e0b",
+                }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       <p className="text-[10px] text-gray-400 mt-3">
