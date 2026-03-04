@@ -3,6 +3,7 @@
 import { Map } from "react-map-gl/maplibre";
 import type { MapRef } from "react-map-gl/maplibre";
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { applyArtisticTheme } from "./artisticTheme";
 
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const DEFAULT_CENTER = { lat: 52.23, lng: 21.01 };
@@ -42,6 +43,13 @@ export function MapContainer({
     });
   }, [onBoundsChanged]);
 
+  const handleLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    applyArtisticTheme(map);
+    handleMoveEnd();
+  }, [handleMoveEnd]);
+
   useEffect(() => {
     if (center && mapRef.current) {
       mapRef.current.flyTo({
@@ -63,7 +71,7 @@ export function MapContainer({
       minZoom={MIN_ZOOM}
       maxBounds={WARSAW_BOUNDS}
       onMoveEnd={handleMoveEnd}
-      onLoad={handleMoveEnd}
+      onLoad={handleLoad}
       style={{ width: "100%", height: "100%" }}
     >
       {children}
