@@ -68,7 +68,14 @@ export async function fetchWarsawStats(
     console.warn("Warsaw stats not available:", error.message);
     return null;
   }
-  return (data as WarsawStats[])?.[0] || null;
+  const row = (data as WarsawStats[])?.[0];
+  if (!row) return null;
+  // SQL may return numeric strings — coerce to numbers
+  return {
+    total_count: Number(row.total_count),
+    avg_price_per_sqm: row.avg_price_per_sqm != null ? Number(row.avg_price_per_sqm) : null,
+    median_price_per_sqm: row.median_price_per_sqm != null ? Number(row.median_price_per_sqm) : null,
+  };
 }
 
 // --- Heatmap API ---

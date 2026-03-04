@@ -45,26 +45,56 @@ function MiniBar({ value, max, color = "#3b82f6" }: { value: number; max: number
   );
 }
 
-function KeyStatsCard({ stats, transactionCount, yoy }: { stats: ViewportStats | null; transactionCount: number; yoy: InsightsData["yoyChange"] }) {
+function KeyStatsCard({ stats, warsawStats, transactionCount, yoy }: { stats: ViewportStats | null; warsawStats: WarsawStats | null; transactionCount: number; yoy: InsightsData["yoyChange"] }) {
   if (!stats) return null;
 
   const yoyUp = yoy?.pct_change != null ? yoy.pct_change > 0 : null;
+  const viewportAvg = stats.avg_price_per_sqm;
+  const warsawAvg = warsawStats?.avg_price_per_sqm;
+  const pctDiff = viewportAvg && warsawAvg ? Math.round(((viewportAvg - warsawAvg) / warsawAvg) * 100) : null;
+  const isAbove = pctDiff != null && pctDiff > 0;
 
   return (
     <Card>
       {/* Main price — hero number */}
-      <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Srednia cena</p>
+      <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Srednia cena w tym obszarze</p>
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-bold text-gray-900">
-          {stats.avg_price_per_sqm ? formatCompact(stats.avg_price_per_sqm) : "—"}
+          {viewportAvg ? formatCompact(viewportAvg) : "—"}
         </span>
         <span className="text-sm text-gray-400">zl/m²</span>
         {yoy?.pct_change != null && (
           <span className={`text-sm font-semibold ${yoyUp ? "text-red-500" : "text-green-500"}`}>
-            {yoyUp ? "↑" : "↓"} {Math.abs(yoy.pct_change)}%
+            {yoyUp ? "↑" : "↓"} {Math.abs(yoy.pct_change)}% r/r
           </span>
         )}
       </div>
+
+      {/* Warsaw average comparison */}
+      {warsawAvg && viewportAvg && (
+        <div className="mt-3 flex items-center gap-3">
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
+            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${Math.min((viewportAvg / Math.max(viewportAvg, warsawAvg)) * 100, 100)}%` }} />
+            {/* Warsaw marker */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-gray-500"
+              style={{ left: `${(warsawAvg / Math.max(viewportAvg, warsawAvg)) * 100}%` }}
+            />
+          </div>
+          <div className="text-right shrink-0">
+            {pctDiff != null && (
+              <span className={`text-sm font-bold ${isAbove ? "text-red-500" : "text-green-500"}`}>
+                {isAbove ? "+" : ""}{pctDiff}%
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {warsawAvg && (
+        <p className="text-xs text-gray-400 mt-1">
+          Srednia Warszawy: <span className="font-medium text-gray-600">{formatPricePerSqm(warsawAvg)}</span>
+        </p>
+      )}
 
       {/* Secondary stats row */}
       <div className="mt-4 grid grid-cols-3 gap-4">
@@ -92,46 +122,6 @@ function KeyStatsCard({ stats, transactionCount, yoy }: { stats: ViewportStats |
               ? `do ${formatCompact(stats.max_price)} zl`
               : ""}
           </p>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function WarsawComparisonCard({ viewportAvg, warsawStats }: { viewportAvg: number | null; warsawStats: WarsawStats | null }) {
-  if (!viewportAvg || !warsawStats?.avg_price_per_sqm) return null;
-
-  const wAvg = warsawStats.avg_price_per_sqm;
-  const pct = Math.round(((viewportAvg - wAvg) / wAvg) * 100);
-  const isAbove = pct > 0;
-  const maxVal = Math.max(viewportAvg, wAvg);
-
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs uppercase tracking-wider text-gray-400">Ten obszar vs Warszawa</p>
-        <span className={`text-lg font-bold ${isAbove ? "text-red-500" : "text-green-500"}`}>
-          {isAbove ? "+" : ""}{pct}%
-        </span>
-      </div>
-      <div className="space-y-3">
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600 font-medium">Ten obszar</span>
-            <span className="font-semibold text-gray-900">{formatPricePerSqm(viewportAvg)}</span>
-          </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(viewportAvg / maxVal) * 100}%` }} />
-          </div>
-        </div>
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600 font-medium">Cala Warszawa</span>
-            <span className="font-semibold text-gray-900">{formatPricePerSqm(wAvg)}</span>
-          </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gray-400 rounded-full transition-all" style={{ width: `${(wAvg / maxVal) * 100}%` }} />
-          </div>
         </div>
       </div>
     </Card>
@@ -444,11 +434,8 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {error && <p className="text-sm text-red-500 px-1">{error}</p>}
 
-          {/* Key stats card */}
-          <KeyStatsCard stats={stats} transactionCount={transactionCount} yoy={insights.yoyChange} />
-
-          {/* Warsaw comparison */}
-          <WarsawComparisonCard viewportAvg={stats?.avg_price_per_sqm ?? null} warsawStats={warsawStats} />
+          {/* Key stats card with Warsaw comparison */}
+          <KeyStatsCard stats={stats} warsawStats={warsawStats} transactionCount={transactionCount} yoy={insights.yoyChange} />
 
           {/* Market gauge */}
           {hasInsights && <MarketGauge insights={insights} />}
