@@ -494,7 +494,7 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
 
         {/* Footer */}
         <div className="px-5 py-3 bg-white border-t border-gray-100 text-xs text-gray-400 shrink-0">
-          obok.me — Dane z RCN (Rejestr Cen Nieruchomosci)
+          obok.me — RCN | GUS BDL | NBP
         </div>
       </div>
     </>
