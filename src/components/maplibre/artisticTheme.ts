@@ -79,29 +79,32 @@ export function applyArtisticTheme(map: MaplibreMap) {
   const style = map.getStyle();
   if (!style?.layers) return;
 
-  for (const layer of style.layers as LayerSpecification[]) {
-    const sl = "source-layer" in layer ? (layer as Record<string, unknown>)["source-layer"] as string : undefined;
-    const id = layer.id;
+  for (const layer of style.layers) {
+    const l = layer as LayerSpecification & Record<string, unknown>;
+    const sl = l["source-layer"] as string | undefined;
+    const id = l.id;
+
+    const type = l.type as string;
 
     /* ── background ── */
-    if (layer.type === "background") {
+    if (type === "background") {
       trySet(map, id, "background-color", P.paper);
       continue;
     }
 
     /* ── water ── */
     if (sl === "water") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         trySet(map, id, "fill-color", P.water);
         trySet(map, id, "fill-opacity", 0.85);
       }
-      if (layer.type === "line") {
+      if (type === "line") {
         trySet(map, id, "line-color", P.waterDark);
       }
       continue;
     }
     if (sl === "waterway") {
-      if (layer.type === "line") {
+      if (type === "line") {
         trySet(map, id, "line-color", P.waterDark);
         trySet(map, id, "line-opacity", 0.7);
       }
@@ -110,14 +113,14 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── green areas ── */
     if (sl === "park") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         trySet(map, id, "fill-color", P.green);
         trySet(map, id, "fill-opacity", 0.45);
       }
       continue;
     }
     if (sl === "landcover") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         trySet(map, id, "fill-color", P.greenLight);
         trySet(map, id, "fill-opacity", 0.35);
       }
@@ -126,7 +129,7 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── landuse ── */
     if (sl === "landuse") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         // Use a match expression for different landuse types
         trySet(map, id, "fill-color", [
           "match",
@@ -145,11 +148,15 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── buildings ── */
     if (sl === "building") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         trySet(map, id, "fill-color", P.building);
         trySet(map, id, "fill-opacity", 0.8);
       }
-      if (layer.type === "line") {
+      if (type === "fill-extrusion") {
+        trySet(map, id, "fill-extrusion-color", P.building);
+        trySet(map, id, "fill-extrusion-opacity", 0.7);
+      }
+      if (type === "line") {
         trySet(map, id, "line-color", P.buildingStroke);
         trySet(map, id, "line-opacity", 0.6);
       }
@@ -158,7 +165,7 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── roads ── */
     if (sl === "transportation") {
-      if (layer.type === "line") {
+      if (type === "line") {
         const isCasing = id.toLowerCase().includes("casing") || id.toLowerCase().includes("case");
         const isBridge = id.toLowerCase().includes("bridge");
         const isTunnel = id.toLowerCase().includes("tunnel");
@@ -186,7 +193,7 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── boundaries ── */
     if (sl === "boundary") {
-      if (layer.type === "line") {
+      if (type === "line") {
         trySet(map, id, "line-color", P.boundary);
         trySet(map, id, "line-opacity", 0.4);
       }
@@ -195,11 +202,11 @@ export function applyArtisticTheme(map: MaplibreMap) {
 
     /* ── aeroway ── */
     if (sl === "aeroway") {
-      if (layer.type === "fill") {
+      if (type === "fill") {
         trySet(map, id, "fill-color", P.industrial);
         trySet(map, id, "fill-opacity", 0.4);
       }
-      if (layer.type === "line") {
+      if (type === "line") {
         trySet(map, id, "line-color", P.rail);
         trySet(map, id, "line-opacity", 0.4);
       }
@@ -207,7 +214,7 @@ export function applyArtisticTheme(map: MaplibreMap) {
     }
 
     /* ── labels / symbols ── */
-    if (layer.type === "symbol") {
+    if (type === "symbol") {
       // Warm up text colors
       trySet(map, id, "text-color", P.ink);
       trySet(map, id, "text-halo-color", P.halo);
