@@ -56,7 +56,7 @@ export function ComparableTransactions({ source, onClose }: ComparableTransactio
       </div>
 
       {/* Source transaction reference */}
-      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 mb-3">
+      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 mb-3 animate-fade-in-up">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-wider text-blue-500">
             Wybrana transakcja
@@ -84,14 +84,15 @@ export function ComparableTransactions({ source, onClose }: ComparableTransactio
         </p>
       ) : (
         <div className="space-y-2">
-          {comps.map((comp) => {
+          {comps.map((comp, i) => {
             const diff = sourcePpsm ? Math.round(((comp.price_per_sqm - sourcePpsm) / sourcePpsm) * 100) : 0;
             const isHigher = diff > 0;
 
             return (
               <div
                 key={comp.id}
-                className="rounded-lg bg-gray-50 p-3 hover:bg-gray-100 transition-colors"
+                className="rounded-lg bg-gray-50 p-3 hover:bg-gray-100 transition-colors animate-slide-in-left"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold text-gray-800">

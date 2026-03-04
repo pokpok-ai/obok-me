@@ -11,6 +11,7 @@ import {
   computePriceToIncome,
   type GradeResult,
 } from "@/lib/demographics-scoring";
+import { usePathLength } from "@/hooks/usePathLength";
 
 interface DemographicsGridProps {
   data: GusDemographics | null;
@@ -29,6 +30,8 @@ interface DemoCard {
 
 /** Mini sparkline SVG with area fill — shows last N data points */
 function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const { ref: polyRef, length } = usePathLength<SVGPolylineElement>();
+
   if (data.length < 3) return null;
   const recent = data.slice(-12);
   const min = Math.min(...recent);
@@ -49,8 +52,9 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 
   return (
     <svg width={w} height={h} className="shrink-0">
-      <path d={areaPath} fill={color} opacity={0.1} />
+      <path d={areaPath} fill={color} opacity={0.1} className="animate-fade-in" style={{ animationDelay: "400ms" }} />
       <polyline
+        ref={polyRef}
         points={linePoints}
         fill="none"
         stroke={color}
@@ -58,6 +62,8 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
         strokeLinejoin="round"
         strokeLinecap="round"
         opacity={0.6}
+        className={length ? "animate-draw-line" : ""}
+        style={length ? { strokeDasharray: length, "--path-length": length } as React.CSSProperties : undefined}
       />
       {/* End dot */}
       <circle
@@ -65,6 +71,8 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
         cy={coords[coords.length - 1].y}
         r="2.5"
         fill={color}
+        className="animate-fade-in"
+        style={{ animationDelay: "600ms" }}
       />
     </svg>
   );
@@ -157,12 +165,13 @@ export function DemographicsGrid({ data, viewportStats }: DemographicsGridProps)
         Warszawa — wskazniki
       </p>
       <div className="grid grid-cols-2 gap-3">
-        {cards.map((card) => (
+        {cards.map((card, i) => (
           <div
             key={card.label}
-            className="rounded-xl p-3"
+            className="rounded-xl p-3 animate-fade-in-up"
             style={{
               backgroundColor: card.grade?.bgColor || "#f9fafb",
+              animationDelay: `${i * 80}ms`,
             }}
           >
             {/* Top row: label + sparkline */}

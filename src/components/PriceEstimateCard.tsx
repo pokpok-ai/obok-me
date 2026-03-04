@@ -98,16 +98,16 @@ export function PriceEstimateCard({ lat, lng, funcType, address, onClose }: Pric
       </div>
 
       {/* Range bar */}
-      <div className="mb-3">
+      <div className="mb-3 animate-fade-in" style={{ animationDelay: "200ms" }}>
         <div className="relative h-6 bg-gradient-to-r from-green-100 via-blue-100 to-orange-100 rounded-lg overflow-hidden">
           {/* Median marker */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-blue-600"
-            style={{ left: `${Math.max(5, Math.min(95, medianPct))}%` }}
+            className="absolute top-0 bottom-0 w-0.5 bg-blue-600 animate-fade-in"
+            style={{ left: `${Math.max(5, Math.min(95, medianPct))}%`, animationDelay: "400ms" }}
           />
           <div
-            className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow"
-            style={{ left: `${Math.max(3, Math.min(93, medianPct))}%` }}
+            className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow animate-fade-in"
+            style={{ left: `${Math.max(3, Math.min(93, medianPct))}%`, animationDelay: "400ms" }}
           />
           {/* Labels on bar */}
           <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-medium text-green-700">
@@ -125,19 +125,19 @@ export function PriceEstimateCard({ lat, lng, funcType, address, onClose }: Pric
 
       {/* Total price row */}
       <div className="grid grid-cols-3 gap-2 rounded-lg bg-gray-50 p-2.5">
-        <div className="text-center">
+        <div className="text-center animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <p className="text-[10px] text-gray-400">Niska</p>
           <p className="text-xs font-semibold text-green-600">
             {fmt(totalP20)} zl
           </p>
         </div>
-        <div className="text-center">
+        <div className="text-center animate-fade-in-up" style={{ animationDelay: "380ms" }}>
           <p className="text-[10px] text-gray-400">Rynkowa</p>
           <p className="text-sm font-bold text-blue-600">
             {fmt(totalMedian)} zl
           </p>
         </div>
-        <div className="text-center">
+        <div className="text-center animate-fade-in-up" style={{ animationDelay: "460ms" }}>
           <p className="text-[10px] text-gray-400">Wysoka</p>
           <p className="text-xs font-semibold text-orange-600">
             {fmt(totalP80)} zl

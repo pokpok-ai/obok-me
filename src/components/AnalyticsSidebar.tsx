@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ViewportStats, WarsawStats, InsightsData, VolumeTrend } from "@/types";
 import type { NbpRatesResponse } from "@/lib/nbp-api";
 import type { GusDemographics } from "@/lib/gus-api";
 import { formatPricePerSqm, formatPLN } from "@/lib/formatters";
+import { useCountUp } from "@/hooks/useCountUp";
+import { usePathLength } from "@/hooks/usePathLength";
 import { PriceTrendChart } from "./PriceTrendChart";
 import { MarketGauge } from "./MarketGauge";
 import { InterestRateCard } from "./InterestRateCard";
@@ -47,16 +49,19 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 
 // --- Sub-components ---
 
-function MiniBar({ value, max, color = "#3b82f6" }: { value: number; max: number; color?: string }) {
+function MiniBar({ value, max, color = "#3b82f6", index = 0 }: { value: number; max: number; color?: string; index?: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="h-full rounded-full animate-bar-grow" style={{ width: `${pct}%`, backgroundColor: color, animationDelay: `${index * 50}ms` }} />
     </div>
   );
 }
 
 function KeyStatsCard({ stats, warsawStats, transactionCount, yoy }: { stats: ViewportStats | null; warsawStats: WarsawStats | null; transactionCount: number; yoy: InsightsData["yoyChange"] }) {
+  const heroFormatter = useCallback((n: number) => formatCompact(n), []);
+  const heroDisplay = useCountUp(stats?.avg_price_per_sqm || 0, 800, heroFormatter);
+
   if (!stats) return null;
 
   const yoyUp = yoy?.pct_change != null ? yoy.pct_change > 0 : null;
@@ -71,7 +76,7 @@ function KeyStatsCard({ stats, warsawStats, transactionCount, yoy }: { stats: Vi
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Srednia cena w tym obszarze</p>
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-bold text-gray-900">
-          {viewportAvg ? formatCompact(viewportAvg) : "—"}
+          {viewportAvg ? heroDisplay : "—"}
         </span>
         <span className="text-sm text-gray-400">zl/m²</span>
         {yoy?.pct_change != null && (
@@ -140,6 +145,8 @@ function KeyStatsCard({ stats, warsawStats, transactionCount, yoy }: { stats: Vi
 }
 
 function VolumeSparklineCard({ data }: { data: VolumeTrend[] }) {
+  const { ref: polyRef, length } = usePathLength<SVGPolylineElement>();
+
   if (data.length < 2) return null;
   const recent = data.slice(-12);
   const values = recent.map((d) => d.transaction_count);
@@ -165,11 +172,14 @@ function VolumeSparklineCard({ data }: { data: VolumeTrend[] }) {
         </div>
         <svg width={w} height={h} className="shrink-0">
           <polyline
+            ref={polyRef}
             points={points}
             fill="none"
             stroke="#10b981"
             strokeWidth="2"
             strokeLinejoin="round"
+            className={length ? "animate-draw-line" : ""}
+            style={length ? { strokeDasharray: length, "--path-length": length } as React.CSSProperties : undefined}
           />
         </svg>
       </div>
@@ -233,10 +243,10 @@ function FloorSection({ data }: { data: InsightsData["floorAnalysis"] }) {
         </span>
       </div>
       <div className="space-y-2">
-        {filtered.map((d) => (
+        {filtered.map((d, i) => (
           <div key={d.floor} className="flex items-center gap-3 text-sm">
             <span className="w-12 text-gray-500 shrink-0 font-medium">{d.floor === 0 ? "Parter" : `${d.floor}p.`}</span>
-            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color={d.floor === 0 ? "#9ca3af" : d.floor <= 3 ? "#60a5fa" : "#3b82f6"} />
+            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color={d.floor === 0 ? "#9ca3af" : d.floor <= 3 ? "#60a5fa" : "#3b82f6"} index={i} />
             <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
             <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
@@ -255,10 +265,10 @@ function RoomsSection({ data }: { data: InsightsData["roomsAnalysis"] }) {
     <Card>
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Cena wg liczby pokoi</p>
       <div className="space-y-2">
-        {data.map((d) => (
+        {data.map((d, i) => (
           <div key={d.rooms} className="flex items-center gap-3 text-sm">
             <span className="w-24 text-gray-500 shrink-0 font-medium">{labels[d.rooms] || `${d.rooms} pok.`}</span>
-            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#8b5cf6" />
+            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#8b5cf6" index={i} />
             <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
             <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
@@ -284,10 +294,10 @@ function AreaSection({ data }: { data: InsightsData["areaAnalysis"] }) {
     <Card>
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Cena/m² wg metrazu</p>
       <div className="space-y-2">
-        {data.map((d) => (
+        {data.map((d, i) => (
           <div key={d.area_bucket} className="flex items-center gap-3 text-sm">
             <span className="w-20 text-gray-500 shrink-0 font-medium">{d.area_bucket}</span>
-            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#f59e0b" />
+            <MiniBar value={d.avg_price_per_sqm} max={maxAvg} color="#f59e0b" index={i} />
             <span className="w-24 text-right shrink-0 font-semibold">{formatPricePerSqm(d.avg_price_per_sqm)}</span>
             <span className="w-10 text-right text-gray-400 shrink-0 text-xs">{d.transaction_count}</span>
           </div>
@@ -306,10 +316,10 @@ function VolumeSection({ data }: { data: InsightsData["volumeTrends"] }) {
     <Card>
       <p className="text-xs uppercase tracking-wider text-gray-400 mb-3">Wolumen (ostatnie {shown.length} mies.)</p>
       <div className="space-y-1.5">
-        {shown.map((d) => (
+        {shown.map((d, i) => (
           <div key={d.month} className="flex items-center gap-3 text-sm">
             <span className="w-16 text-gray-500 shrink-0 font-medium">{d.month}</span>
-            <MiniBar value={d.transaction_count} max={maxCount} color="#10b981" />
+            <MiniBar value={d.transaction_count} max={maxCount} color="#10b981" index={i} />
             <span className="w-10 text-right shrink-0 font-semibold">{d.transaction_count}</span>
             <span className="w-24 text-right text-gray-400 shrink-0 text-xs">sr. {formatPLN(d.avg_price)}</span>
           </div>
@@ -384,9 +394,13 @@ function SectionTab({ title, active, onClick }: { title: string; active: boolean
 export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error, onRefresh, transactionCount, nbpRates, demographics, filters, onDistrictClick }: AnalyticsSidebarProps) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("floor");
+  const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
-    if (open) onRefresh();
+    if (open) {
+      onRefresh();
+      setAnimKey((k) => k + 1);
+    }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasInsights = insights.priceTrends.length > 0;
@@ -442,7 +456,7 @@ export function AnalyticsSidebar({ stats, warsawStats, insights, loading, error,
         </div>
 
         {/* Scrollable content — cards with gaps */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div key={animKey} className="flex-1 overflow-y-auto p-4 space-y-4">
           {error && <p className="text-sm text-red-500 px-1">{error}</p>}
 
           {/* Key stats card with Warsaw comparison */}

@@ -77,7 +77,8 @@ export function DistrictRankings({ filters, onDistrictClick, warsawAvg }: Distri
             <button
               key={d.district}
               onClick={() => onDistrictClick?.({ lat: d.center_lat, lng: d.center_lng })}
-              className="w-full text-left group hover:bg-gray-50 rounded-lg p-1.5 transition-colors"
+              className="w-full text-left group hover:bg-gray-50 rounded-lg p-1.5 transition-colors animate-fade-in-up"
+              style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="flex items-center justify-between mb-0.5">
                 <div className="flex items-center gap-2">
@@ -104,8 +105,8 @@ export function DistrictRankings({ filters, onDistrictClick, warsawAvg }: Distri
               <div className="flex items-center gap-2 pl-6">
                 <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%`, backgroundColor: barColor }}
+                    className="h-full rounded-full animate-bar-grow"
+                    style={{ width: `${pct}%`, backgroundColor: barColor, animationDelay: `${i * 40 + 100}ms` }}
                   />
                 </div>
                 <span className="text-[9px] text-gray-400 w-16 text-right">

@@ -5,6 +5,7 @@ import type { NbpRatesResponse } from "@/lib/nbp-api";
 import type { GusDemographics } from "@/lib/gus-api";
 import { latestValue } from "@/lib/gus-api";
 import { computeMonthlyMortgage } from "@/lib/demographics-scoring";
+import { usePathLength } from "@/hooks/usePathLength";
 
 interface AffordabilityCardProps {
   viewportStats: ViewportStats | null;
@@ -20,6 +21,7 @@ const LOAN_YEARS = 25;
 
 /** Mini semicircular gauge for salary percentage */
 function SalaryGauge({ pct }: { pct: number }) {
+  const { ref: arcRef, length: arcLength } = usePathLength<SVGPathElement>();
   const r = 40;
   const cx = 50;
   const cy = 45;
@@ -61,14 +63,17 @@ function SalaryGauge({ pct }: { pct: number }) {
       />
       {/* Value arc */}
       <path
+        ref={arcRef}
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${valuePoint.x} ${valuePoint.y}`}
         fill="none"
         stroke={color}
         strokeWidth="8"
         strokeLinecap="round"
+        className={arcLength ? "animate-draw-line" : ""}
+        style={arcLength ? { strokeDasharray: arcLength, "--path-length": arcLength } as React.CSSProperties : undefined}
       />
       {/* Needle dot */}
-      <circle cx={valuePoint.x} cy={valuePoint.y} r="4" fill={color} stroke="white" strokeWidth="2" />
+      <circle cx={valuePoint.x} cy={valuePoint.y} r="4" fill={color} stroke="white" strokeWidth="2" className="animate-fade-in" style={{ animationDelay: "500ms" }} />
       {/* Value text */}
       <text x={cx} y={cy - 5} textAnchor="middle" className="text-sm font-bold" fill={color}>
         {pct}%
@@ -146,7 +151,7 @@ export function AffordabilityCard({ viewportStats, nbpRates, demographics }: Aff
           </div>
           <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full animate-bar-grow"
               style={{
                 width: `${(monthlyMortgage / maxPayment) * 100}%`,
                 backgroundColor: buyIsCheaper ? "#22c55e" : "#6b7280",
@@ -165,10 +170,11 @@ export function AffordabilityCard({ viewportStats, nbpRates, demographics }: Aff
           </div>
           <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full animate-bar-grow"
               style={{
                 width: `${(monthlyRent / maxPayment) * 100}%`,
                 backgroundColor: !buyIsCheaper ? "#22c55e" : "#6b7280",
+                animationDelay: "100ms",
               }}
             />
           </div>

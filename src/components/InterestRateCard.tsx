@@ -44,7 +44,7 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
           </div>
 
           {/* Rate corridor visualization */}
-          <div className="relative h-8 bg-gray-50 rounded-lg overflow-hidden">
+          <div className="relative h-8 bg-gray-50 rounded-lg overflow-hidden animate-fade-in">
             {/* Gradient bar from deposit to lombard */}
             <div
               className="absolute top-1 bottom-1 rounded-md"
@@ -57,12 +57,12 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
             />
             {/* Reference rate marker */}
             <div
-              className="absolute top-0 bottom-0 w-0.5 bg-blue-600"
-              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85}%` }}
+              className="absolute top-0 bottom-0 w-0.5 bg-blue-600 animate-fade-in"
+              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85}%`, animationDelay: "300ms" }}
             />
             <div
-              className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow"
-              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85 - 0.75}%` }}
+              className="absolute -top-0.5 w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow animate-fade-in"
+              style={{ left: `${(refRate.value / maxRate) * 100 * 0.85 - 0.75}%`, animationDelay: "300ms" }}
             />
             {/* Scale labels */}
             <span className="absolute bottom-0.5 left-1 text-[9px] text-gray-400">0%</span>
@@ -73,7 +73,7 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
 
       {/* Rate bars */}
       <div className="space-y-2.5">
-        {[deposit, refRate, lombard].filter(Boolean).map((rate) => (
+        {[deposit, refRate, lombard].filter(Boolean).map((rate, i) => (
           <div key={rate!.name}>
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-gray-500">{formatRateName(rate!.name)}</span>
@@ -81,10 +81,11 @@ export function InterestRateCard({ data }: InterestRateCardProps) {
             </div>
             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all"
+                className="h-full rounded-full animate-bar-grow"
                 style={{
                   width: `${(rate!.value / maxRate) * 100}%`,
                   backgroundColor: rate === refRate ? "#3b82f6" : rate === deposit ? "#22c55e" : "#f59e0b",
+                  animationDelay: `${i * 100}ms`,
                 }}
               />
             </div>

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { PriceTrend } from "@/types";
 import { formatPricePerSqm } from "@/lib/formatters";
 import { generateForecast, type ForecastPoint } from "@/lib/forecast";
+import { usePathLength } from "@/hooks/usePathLength";
 
 interface PriceTrendChartProps {
   data: PriceTrend[];
@@ -12,6 +13,8 @@ interface PriceTrendChartProps {
 
 export function PriceTrendChart({ data, height = 120 }: PriceTrendChartProps) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const { ref: histRef, length: histLength } = usePathLength<SVGPathElement>();
+  const { ref: forecastRef, length: forecastLength } = usePathLength<SVGPathElement>();
 
   const forecast = useMemo(() => generateForecast(data, 5), [data]);
 
@@ -87,25 +90,37 @@ export function PriceTrendChart({ data, height = 120 }: PriceTrendChartProps) {
         </defs>
 
         {/* Historical area fill */}
-        <path d={areaPath} fill="url(#trendGrad)" />
+        <path d={areaPath} fill="url(#trendGrad)" className="animate-fade-in" style={{ animationDelay: "400ms" }} />
 
         {/* Forecast area fill */}
         {forecastAreaPath && (
-          <path d={forecastAreaPath} fill="url(#forecastGrad)" />
+          <path d={forecastAreaPath} fill="url(#forecastGrad)" className="animate-fade-in" style={{ animationDelay: "600ms" }} />
         )}
 
         {/* Historical line */}
-        <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinejoin="round" />
+        <path
+          ref={histRef}
+          d={linePath}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          className={histLength ? "animate-draw-line" : ""}
+          style={histLength ? { strokeDasharray: histLength, "--path-length": histLength } as React.CSSProperties : undefined}
+        />
 
         {/* Forecast dashed line */}
         {forecastLinePath && (
           <path
+            ref={forecastRef}
             d={forecastLinePath}
             fill="none"
             stroke="#f59e0b"
             strokeWidth="2"
             strokeLinejoin="round"
-            strokeDasharray="6 3"
+            strokeDasharray={forecastLength ? `${forecastLength}` : "6 3"}
+            className={forecastLength ? "animate-draw-line" : ""}
+            style={forecastLength ? { "--path-length": forecastLength, animationDelay: "600ms" } as React.CSSProperties : undefined}
           />
         )}
 
