@@ -57,8 +57,8 @@ export function TransactionMarkers({ transactions, focusedTransaction, onFocusCo
             const half = size / 2;
             const fontSize = size >= 40 ? 13 : 11;
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-              <circle cx="${half}" cy="${half}" r="${half}" fill="#3b82f6" opacity="0.85"/>
-              <circle cx="${half}" cy="${half}" r="${half - 3}" fill="#2563eb" opacity="0.9"/>
+              <circle cx="${half}" cy="${half}" r="${half}" fill="#d946ef" opacity="0.85"/>
+              <circle cx="${half}" cy="${half}" r="${half - 3}" fill="#c026d3" opacity="0.9"/>
               <text x="50%" y="52%" text-anchor="middle" dominant-baseline="central" fill="white" font-size="${fontSize}" font-weight="bold" font-family="system-ui">${count}</text>
             </svg>`;
             return new google.maps.marker.AdvancedMarkerElement({
