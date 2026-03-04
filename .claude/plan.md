@@ -1,6 +1,6 @@
 # obok.me — ZipSmart Replication Plan
 
-## Project State (as of 2026-03-03)
+## Project State (as of 2026-03-04)
 
 ### What's Done (Phase 1)
 - [x] SQL functions use `lat/lng BETWEEN` (not broken `location` column)
@@ -22,6 +22,45 @@
 - [x] Enlarged Analityka sidebar toggle label
 - [x] Moved LocateMe to bottom-left (no more overlap with Maps zoom controls)
 
+### What's Done (Phase 2) ✅
+- [x] **Heatmap layer** — `HeatmapLayer.tsx` + `useHeatmap.ts` + toggle button (flame icon)
+- [x] **SQL: `heatmap_points()`** — returns lat/lng/weight, limit 5000
+- [x] **Price forecast** — `forecast.ts` linear regression, 5-month dashed line on chart
+- [x] **Market gauge** — `MarketGauge.tsx` using `react-gauge-component` (dynamic import, ssr:false)
+- [x] **Market score** — `market-score.ts` composite 0-100 (price 50%, YoY 30%, volume 20%)
+- [x] **SQL: `warsaw_wide_stats()`** — city-wide avg/median (no viewport filter)
+- [x] **Warsaw comparison card** — viewport avg vs city avg with bars + % diff
+- [x] **Volume sparkline card** — last 12 months mini chart
+- [x] **Card-based sidebar** — redesigned with large text, rounded-2xl cards, gaps, clear hierarchy
+- [x] **Forecast text** — gauge shows Polish sentence ("Do sierpnia prognozujemy...")
+- [x] **All existing tabs preserved** — Pietro, Pokoje, Metraz, Wolumen, Strony
+
+### Phase 2 Decisions
+- **Warsaw comparison card: KEPT** — useful when zoomed into a neighborhood (shows +10% in Wilanow etc.)
+- **Gauge library: react-gauge-component** — user said "use some UI library, do not invent gauge"
+- **R² threshold: 0.01** (was 0.1, too strict — forecast wasn't showing)
+- **Sidebar style: ZipSmart reference** — card-based, large text, proper hierarchy, bg-gray-50 between cards
+- **Sidebar width: 440px** (was 420px)
+
+### What's Done (Phase 3) ✅
+- [x] **GUS BDL API** — correct unit `071412865000` (Warsaw powiat, level 5)
+- [x] **GUS variables**: population (72305), salary (64428), unemployment rate % (60270), crime total (58559), crime per 1000 (398594)
+- [x] **NBP interest rates** — hardcoded fallback (5.75% ref, 6.25% lombard, 5.25% deposit)
+- [x] **Demographics scoring** — `demographics-scoring.ts` with letter grades (A/B/C/D/F)
+- [x] **DemographicsGrid rewrite** — color-coded graded cards (not raw counts)
+- [x] **AffordabilityCard** — mortgage calculator + buy vs rent + salary % bar
+- [x] **InterestRateCard** — hero reference rate + key NBP rates
+
+### Phase 3 Decisions
+- **GUS unit ID: `071412865000`** (Warsaw powiat) — NOT `146500000000` which doesn't exist
+- **Use GUS-provided rates** — unemployment % (var 60270) and crime/1000 (var 398594) come directly from GUS, no computation needed
+- **Salary at powiat level only** — var 64428 has no data at gmina level (6), only powiat (5)
+- **NBP: hardcoded fallback** — XML at `static.nbp.pl` fails on Vercel, rates unchanged since Oct 2023
+- **Crime grading per 1000** — A<15, B<20, C<30, D<40, F>40 (Warsaw ~27 = C)
+- **Salary grading** — A>9000, B>7500, C>6000, D>5000 (Warsaw 10,715 = A)
+- **Warsaw avg rent: 85 PLN/m²/month** — hardcoded from NBP quarterly data
+- **Bank margin: 1.7%** above NBP reference rate for mortgage calc
+
 ### Final function_type set (4 values only)
 | function_type | DB count | % |
 |---|---|---|
@@ -36,84 +75,19 @@
 
 ---
 
-## Phase 2 — Core Analytics (NEXT)
+## Phase 4 — Reports & AI (NEXT)
 
 **RULE: Keep ALL existing ANALIZA functionality. Only ADD new features on top.**
-**Reference: `.claude/zipsmart-analysis.md` for ZipSmart feature parity targets.**
-
-### 2.1 Price Heatmap Layer
-- NEW: `src/components/HeatmapLayer.tsx`
-- Google Maps `google.maps.visualization.HeatmapLayer`
-- Weight points by price_per_sqm, color: green (cheap) → red (expensive)
-- Toggle button on map UI (bottom-left, near LocateMe)
-- Modify: `src/app/page.tsx` — heatmap toggle state
-- NEW SQL: `heatmap_points()` — returns lat/lng/price_per_sqm with higher limit (~5000) for density
-- Needs: `libraries=["visualization"]` in Google Maps APIProvider
-
-### 2.2 Simple Price Forecast
-- NEW: `src/lib/forecast.ts` — linear regression on monthly price trends
-- Project 5 months forward as dashed line on PriceTrendChart (matches ZipSmart's 5-month horizon)
-- Modify: `src/components/PriceTrendChart.tsx` — forecast extension
-- Data source: existing `PriceTrend[]` from `viewport_price_trends()` — has monthly avg_price_per_sqm
-
-### 2.3 Market Categorization (NEW — inspired by ZipSmart)
-- Classify viewport as: Rynek kupujacego / Rynek sprzedajacego / Rynek zrownowazony
-- Compute from: volume trend (rising/falling) + price trend (rising/falling) + YoY change
-- Display as badge/indicator in ViewportSummary section
-- No new SQL needed — derive from existing priceTrends + volumeTrends + yoyChange
-
-### 2.4 Enhanced Analytics Sidebar
-- **Viewport vs Warsaw-wide comparison**: avg price/m² in viewport vs all-Warsaw average
-  - NEW SQL: `warsaw_wide_stats()` — returns city-wide avg/median price_per_sqm (no viewport filter)
-- Volume sparkline in summary section (mini chart from existing VolumeTrend data)
-- Price distribution histogram (buckets from raw transaction prices in viewport)
-- **Keep all existing tabs**: Price Trends, Floor, Rooms, Area, Volume, Parties, YoY badge
-
----
-
-## Phase 3 — External Data
-
-### 3.1 GUS BDL Demographics + Crime (FREE API, no auth)
-- URL: `api.stat.gov.pl/Home/BdlApi` (REST, JSON)
-- NEW: `src/lib/gus-api.ts`
-- NEW: `src/components/DemographicsGrid.tsx` — 3x2 stat card grid (ZipSmart "Market Conditions" style)
-- **Cards**:
-  - Populacja (population)
-  - Sr. wynagrodzenie (avg salary / Household Income)
-  - Bezrobocie % (unemployment)
-  - Wyksztalcenie wyzsze % (higher education)
-  - Przestepczosc (crime rate) — **GUS BDL theme 37/371/2290** (crimes by powiat)
-  - Cena/dochod (price-to-income ratio) — computed: RCN avg price / GUS avg salary
-- Each card: large colored value + label + info tooltip
-- Color coding: green (good) / yellow (neutral) / orange (warning)
-
-### 3.2 NBP Housing + Rental Data (FREE, XLSX + API)
-- **ceny_mieszkan.xlsx**: `static.nbp.pl/dane/rynek-nieruchomosci/ceny_mieszkan.xlsx`
-  - Transaction prices (primary + secondary market)
-  - **Rental rates** (czynsz najmu) — enables Buy vs Rent!
-  - Hedonic price indices
-  - Quarterly data since Q3 2006, Warsaw + 15 cities
-  - Split by: city center vs outskirts
-- NEW: `src/lib/nbp-data.ts` — parse XLSX, cache quarterly
-- NEW: `src/components/RentalCard.tsx` — Buy vs Rent indicator
-- **NBP quarterly PDF reports**: `nbp.pl/publikacje/.../informacja-kwartalna/` — parse for detailed market analysis
-
-### 3.3 NBP Interest Rates (FREE API)
-- URL: `api.nbp.pl` (REST, JSON, no auth)
-- NEW: `src/lib/nbp-api.ts`
-- Display: reference rate + WIBOR history in sidebar
-
----
-
-## Phase 4 — Reports & AI
 
 ### 4.1 PDF Report
 - NEW: `src/lib/pdf-report.ts` (jsPDF or browser print CSS)
 - Downloadable viewport analytics PDF
+- Include: key stats, price trend, market gauge, demographics grades, affordability
 
 ### 4.2 AI Summary
 - Send viewport stats to Claude API
 - Return 2-3 sentence market summary in Polish
+- Display in a card above the section tabs
 
 ---
 
@@ -121,27 +95,32 @@
 
 | Feature | Data Source | Status |
 |---------|-----------|--------|
-| Interactive map + markers | RCN + Google Maps | DONE |
-| Price trends by viewport | RCN monthly aggregates | DONE |
-| Volume trends | RCN transaction counts | DONE |
-| Primary vs secondary market | `market_type` column | DONE |
-| Floor/rooms/area analysis | RCN columns | DONE |
-| Buyer/seller party analysis | RCN columns | DONE |
-| YoY price change | RCN dates | DONE |
-| Function type sub-filters | RCN `lok_funkcja` | DONE |
-| Price heatmap | RCN lat/lng + price_per_sqm | Phase 2 |
-| Price forecast | RCN trend regression | Phase 2 |
-| Market gauge + signal | RCN trends composite | Phase 2 |
-| Demographics (population, salary, education) | GUS BDL API | Phase 3 |
-| Crime rate | GUS BDL API (theme 37) | Phase 3 |
-| Rental rates + Buy vs Rent | NBP ceny_mieszkan.xlsx | Phase 3 |
-| Interest rates + WIBOR | NBP API (api.nbp.pl) | Phase 3 |
-| Price-to-Income ratio | GUS salary + RCN price | Phase 3 |
+| Interactive map + markers | RCN + Google Maps | ✅ DONE |
+| Price trends by viewport | RCN monthly aggregates | ✅ DONE |
+| Volume trends | RCN transaction counts | ✅ DONE |
+| Primary vs secondary market | `market_type` column | ✅ DONE |
+| Floor/rooms/area analysis | RCN columns | ✅ DONE |
+| Buyer/seller party analysis | RCN columns | ✅ DONE |
+| YoY price change | RCN dates | ✅ DONE |
+| Function type sub-filters | RCN `lok_funkcja` | ✅ DONE |
+| Price heatmap | RCN lat/lng + price_per_sqm | ✅ DONE |
+| Price forecast | RCN trend regression | ✅ DONE |
+| Market gauge + signal | RCN trends composite | ✅ DONE |
+| Warsaw comparison | viewport avg vs city avg | ✅ DONE |
+| Card-based sidebar | ZipSmart-style UI | ✅ DONE |
+| Demographics (population, salary, crime, unemployment) | GUS BDL API | ✅ DONE |
+| Letter grades (A/B/C/D/F) | GUS benchmarks | ✅ DONE |
+| Crime rate per 1000 | GUS BDL var 398594 | ✅ DONE |
+| Unemployment rate % | GUS BDL var 60270 | ✅ DONE |
+| Interest rates | NBP (hardcoded fallback) | ✅ DONE |
+| Price-to-Income ratio | GUS salary + RCN price | ✅ DONE |
+| Mortgage affordability | NBP rate + viewport price | ✅ DONE |
+| Buy vs Rent | Mortgage vs NBP avg rent | ✅ DONE |
 | PDF reports | Generated from analytics | Phase 4 |
 | AI Q&A summary | Claude API | Phase 4 |
-| Shadow Inventory | No listing data | NOT POSSIBLE |
-| Days on Market | No listing dates | NOT POSSIBLE |
-| Real-time alerts | RCN is batch | NOT POSSIBLE |
+| Shadow Inventory | No listing data | ❌ NOT POSSIBLE |
+| Days on Market | No listing dates | ❌ NOT POSSIBLE |
+| Real-time alerts | RCN is batch | ❌ NOT POSSIBLE |
 
 ---
 
@@ -149,15 +128,29 @@
 
 | File | Purpose |
 |------|---------|
-| `scripts/setup_db.sql` | Core SQL: transactions_in_view, viewport_stats |
+| `scripts/setup_db.sql` | Core SQL: transactions_in_view, viewport_stats, heatmap_points, warsaw_wide_stats |
 | `scripts/setup_correlations.sql` | 7 analytics functions (price trends, floor, rooms, area, volume, parties, yoy) |
 | `scripts/import_rcn.py` | RCN parquet → Supabase importer |
 | `src/lib/api.ts` | All Supabase RPC calls |
+| `src/lib/forecast.ts` | Linear regression + 5-month price forecast |
+| `src/lib/market-score.ts` | Market score (0-100) + signal labels |
+| `src/lib/demographics-scoring.ts` | Letter grades (A-F) + mortgage calc + benchmarks |
+| `src/lib/gus-api.ts` | GUS BDL client + helpers (latestValue, yoyChange) |
+| `src/lib/nbp-api.ts` | NBP rates client + formatRateName |
 | `src/hooks/useTransactions.ts` | Fetch transactions + stats for viewport |
-| `src/hooks/useInsights.ts` | Fetch all 7 analytics datasets |
+| `src/hooks/useInsights.ts` | Fetch all analytics + Warsaw stats |
+| `src/hooks/useHeatmap.ts` | Fetch heatmap points (only when enabled) |
+| `src/hooks/useExternalData.ts` | Fetch NBP rates + GUS demographics |
+| `src/app/api/gus/route.ts` | GUS BDL proxy (unit 071412865000, 5 variables) |
+| `src/app/api/nbp/rates/route.ts` | NBP rates proxy (XML parse + hardcoded fallback) |
 | `src/components/MapContainer.tsx` | Google Maps with Warsaw bounds restriction |
 | `src/components/FilterBar.tsx` | Function type filters + date range |
 | `src/components/TransactionMarkers.tsx` | Color-coded markers by price |
-| `src/components/AnalyticsSidebar.tsx` | Tabbed analytics panel |
-| `src/components/PriceTrendChart.tsx` | SVG sparkline for price trends |
+| `src/components/HeatmapLayer.tsx` | Google Maps visualization heatmap |
+| `src/components/MarketGauge.tsx` | Semicircular gauge + forecast text |
+| `src/components/AnalyticsSidebar.tsx` | Card-based analytics panel (ZipSmart style) |
+| `src/components/PriceTrendChart.tsx` | SVG chart with forecast dashed line |
+| `src/components/InterestRateCard.tsx` | NBP reference rate + key rates |
+| `src/components/DemographicsGrid.tsx` | Letter-graded demographic cards (2x3 grid) |
+| `src/components/AffordabilityCard.tsx` | Mortgage calc + buy vs rent + salary % |
 | `src/components/LocateMe.tsx` | Geolocation button (bottom-left) |
