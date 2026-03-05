@@ -3,7 +3,7 @@ import type { ViewBounds, Salon } from "@/types";
 
 export async function fetchSalons(
   bounds: ViewBounds,
-  categoryId?: number | null,
+  categoryName?: string | null,
   promoOnly?: boolean,
   promotedOnly?: boolean
 ): Promise<Salon[]> {
@@ -12,7 +12,7 @@ export async function fetchSalons(
     min_lng: bounds.west,
     max_lat: bounds.north,
     max_lng: bounds.east,
-    cat: categoryId || null,
+    cat_name: categoryName || null,
     promo_only: promoOnly || false,
     promoted_only: promotedOnly || false,
     max_results: 5000,

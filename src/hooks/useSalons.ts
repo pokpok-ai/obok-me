@@ -5,7 +5,7 @@ import type { ViewBounds, Salon } from "@/types";
 export function useSalons(
   bounds: ViewBounds | null,
   visible: boolean = true,
-  categoryId?: number | null,
+  categoryName?: string | null,
   promoOnly?: boolean
 ) {
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -20,7 +20,7 @@ export function useSalons(
     let cancelled = false;
     setLoading(true);
 
-    fetchSalons(bounds, categoryId, promoOnly)
+    fetchSalons(bounds, categoryName, promoOnly)
       .then((data) => {
         if (cancelled) return;
         setSalons(data);
@@ -36,7 +36,7 @@ export function useSalons(
     return () => {
       cancelled = true;
     };
-  }, [bounds, visible, categoryId, promoOnly]);
+  }, [bounds, visible, categoryName, promoOnly]);
 
   return { salons, loading };
 }
