@@ -375,16 +375,20 @@ def upsert_services(salon_db_id: int, services: list[dict]) -> int:
     }
 
     now = datetime.now(timezone.utc).isoformat()
-    rows = [{
-        "salon_id": salon_db_id,
-        "service_name": s["service_name"][:200],  # Truncate long names
-        "category_name": s.get("category_name"),
-        "price_pln": s.get("price_pln"),
-        "original_price_pln": s.get("original_price_pln"),
-        "discount_pct": s.get("discount_pct"),
-        "duration_minutes": s.get("duration_minutes"),
-        "last_scraped_at": now,
-    } for s in services]
+    seen_names: dict[str, dict] = {}
+    for s in services:
+        name = s["service_name"][:200]
+        seen_names[name] = {
+            "salon_id": salon_db_id,
+            "service_name": name,
+            "category_name": s.get("category_name"),
+            "price_pln": s.get("price_pln"),
+            "original_price_pln": s.get("original_price_pln"),
+            "discount_pct": s.get("discount_pct"),
+            "duration_minutes": s.get("duration_minutes"),
+            "last_scraped_at": now,
+        }
+    rows = list(seen_names.values())
 
     body = json.dumps(rows).encode("utf-8")
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
