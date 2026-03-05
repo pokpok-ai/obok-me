@@ -162,3 +162,32 @@ export interface DistrictRanking {
   center_lat: number;
   center_lng: number;
 }
+
+// --- Salon Types ---
+
+export interface SalonService {
+  name: string;
+  category: string | null;
+  price: number | null;
+  original_price: number | null;
+  discount_pct: number | null;
+  duration: number | null;
+}
+
+export interface Salon {
+  id: number;
+  booksy_id: number;
+  name: string;
+  category_id: number | null;
+  category_name: string | null;
+  address: string | null;
+  lat: number;
+  lng: number;
+  rating: number | null;
+  review_count: number | null;
+  has_promotion: boolean;
+  max_discount_pct: number;
+  is_promoted: boolean;
+  photo_url: string | null;
+  services: SalonService[];
+}

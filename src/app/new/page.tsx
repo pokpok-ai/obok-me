@@ -10,10 +10,12 @@ import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
 import { PriceEstimateCard } from "@/components/PriceEstimateCard";
 import { ComparableTransactions } from "@/components/ComparableTransactions";
 import { SalonMarkers } from "@/components/maplibre/SalonMarkers";
+import { SalonDataMarkers } from "@/components/maplibre/SalonDataMarkers";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInsights } from "@/hooks/useInsights";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useExternalData } from "@/hooks/useExternalData";
+import { useSalons } from "@/hooks/useSalons";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
@@ -69,6 +71,8 @@ export default function NewMapPage() {
   );
 
   const { nbpRates, demographics } = useExternalData();
+
+  const { salons } = useSalons(debouncedBounds);
 
   const typeStats = useMemo(() => {
     const m = new Map<string, { count: number; sumPpsm: number; countPpsm: number; sumPrice: number }>();
@@ -173,6 +177,7 @@ export default function NewMapPage() {
         )}
         {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
         <SalonMarkers />
+        <SalonDataMarkers salons={salons} />
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
       <button
