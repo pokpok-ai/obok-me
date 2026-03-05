@@ -40,6 +40,8 @@ export function HydrologyOverlay({ enabled }: HydrologyOverlayProps) {
 
   const fetchData = useCallback(() => {
     if (!map || !enabled) return;
+    const zoom = map.getZoom();
+    if (zoom !== undefined && zoom < 12) return; // Too zoomed out for Overpass
     const bounds = map.getBounds();
     if (!bounds) return;
 

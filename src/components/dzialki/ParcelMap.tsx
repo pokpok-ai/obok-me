@@ -6,14 +6,14 @@ import { ParcelPolygon } from "./ParcelPolygon";
 import type { Parcel } from "@/types/dzialki";
 
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "";
-const DEFAULT_CENTER = { lat: 52.23, lng: 21.01 };
-const DEFAULT_ZOOM = 12;
+const DEFAULT_CENTER = { lat: 52.05, lng: 19.95 }; // Center of Poland
+const DEFAULT_ZOOM = 7;
 
-const WARSAW_BOUNDS = {
-  north: 52.45,
-  south: 52.05,
-  east: 21.35,
-  west: 20.75,
+const POLAND_BOUNDS = {
+  north: 54.9,
+  south: 49.0,
+  east: 24.2,
+  west: 14.1,
 };
 
 interface ParcelMapProps {
@@ -56,9 +56,9 @@ export function ParcelMap({
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
-        minZoom={10}
+        minZoom={6}
         restriction={{
-          latLngBounds: WARSAW_BOUNDS,
+          latLngBounds: POLAND_BOUNDS,
           strictBounds: false,
         }}
         className="w-full h-full"

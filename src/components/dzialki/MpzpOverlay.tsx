@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
+import { buildWmsTileUrl } from "@/lib/wmsTiles";
 
 const WMS_URL =
   "https://mapy.geoportal.gov.pl/wss/ext/KrajowaIntegracjaMiejscowychPlanowZagospodarowaniaPrzestrzennego";
@@ -19,11 +20,7 @@ export function MpzpOverlay({ enabled }: MpzpOverlayProps) {
 
     if (!enabled) {
       if (overlayRef.current) {
-        map.overlayMapTypes.forEach((_, i) => {
-          if (map.overlayMapTypes.getAt(i) === overlayRef.current) {
-            map.overlayMapTypes.removeAt(i);
-          }
-        });
+        removeOverlay(map, overlayRef.current);
         overlayRef.current = null;
       }
       return;
@@ -31,43 +28,7 @@ export function MpzpOverlay({ enabled }: MpzpOverlayProps) {
 
     const wmsLayer = new google.maps.ImageMapType({
       getTileUrl(coord, zoom) {
-        const proj = map.getProjection();
-        if (!proj) return "";
-
-        const tileSize = 256;
-        const scale = 1 << zoom;
-
-        const worldCoordNW = new google.maps.Point(
-          (coord.x * tileSize) / scale,
-          (coord.y * tileSize) / scale
-        );
-        const worldCoordSE = new google.maps.Point(
-          ((coord.x + 1) * tileSize) / scale,
-          ((coord.y + 1) * tileSize) / scale
-        );
-
-        const nw = proj.fromPointToLatLng(
-          new google.maps.Point(worldCoordNW.x * scale, worldCoordNW.y * scale)
-        );
-        const se = proj.fromPointToLatLng(
-          new google.maps.Point(worldCoordSE.x * scale, worldCoordSE.y * scale)
-        );
-
-        if (!nw || !se) return "";
-
-        const bbox = `${nw.lng()},${se.lat()},${se.lng()},${nw.lat()}`;
-
-        return (
-          `${WMS_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap` +
-          `&LAYERS=plany,raster,wektor-str` +
-          `&STYLES=` +
-          `&SRS=EPSG:4326` +
-          `&BBOX=${bbox}` +
-          `&WIDTH=${tileSize}` +
-          `&HEIGHT=${tileSize}` +
-          `&FORMAT=image/png` +
-          `&TRANSPARENT=true`
-        );
+        return buildWmsTileUrl(WMS_URL, "plany,raster,wektor-str", coord, zoom);
       },
       tileSize: new google.maps.Size(256, 256),
       opacity: 0.5,
@@ -79,15 +40,19 @@ export function MpzpOverlay({ enabled }: MpzpOverlayProps) {
 
     return () => {
       if (overlayRef.current) {
-        map.overlayMapTypes.forEach((_, i) => {
-          if (map.overlayMapTypes.getAt(i) === overlayRef.current) {
-            map.overlayMapTypes.removeAt(i);
-          }
-        });
+        removeOverlay(map, overlayRef.current);
         overlayRef.current = null;
       }
     };
   }, [map, enabled]);
 
   return null;
+}
+
+function removeOverlay(map: google.maps.Map, overlay: google.maps.ImageMapType) {
+  for (let i = map.overlayMapTypes.getLength() - 1; i >= 0; i--) {
+    if (map.overlayMapTypes.getAt(i) === overlay) {
+      map.overlayMapTypes.removeAt(i);
+    }
+  }
 }
