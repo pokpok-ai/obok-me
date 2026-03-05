@@ -7,7 +7,9 @@ export async function fetchSalons(
   promoOnly?: boolean,
   promotedOnly?: boolean
 ): Promise<Salon[]> {
-  const { data, error } = await getSupabase().rpc("booksy_salons_in_view", {
+  // Use booksy_salons_json to bypass PostgREST's 1000-row limit
+  // It returns a single json value wrapping the full result set
+  const { data, error } = await getSupabase().rpc("booksy_salons_json", {
     min_lat: bounds.south,
     min_lng: bounds.west,
     max_lat: bounds.north,
