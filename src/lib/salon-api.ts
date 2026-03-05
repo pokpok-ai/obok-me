@@ -12,7 +12,7 @@ export async function fetchSalons(
     min_lng: bounds.west,
     max_lat: bounds.north,
     max_lng: bounds.east,
-    cat_name: categoryName || null,
+    cat: categoryName || null,
     promo_only: promoOnly || false,
     promoted_only: promotedOnly || false,
     max_results: 5000,
