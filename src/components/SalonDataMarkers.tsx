@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useMap, InfoWindow } from "@vis.gl/react-google-maps";
+import { useMap, InfoWindow, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import type { Salon, SalonService } from "@/types";
 
@@ -88,14 +88,16 @@ interface SalonDataMarkersProps {
 
 export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
   const map = useMap();
+  const markerLib = useMapsLibrary("marker");
   const [selected, setSelected] = useState<Salon | null>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const markersRef = useRef<Map<number, google.maps.marker.AdvancedMarkerElement>>(new Map());
   const salonsById = useRef<Map<number, Salon>>(new Map());
 
-  // Init clusterer once
+  // Init clusterer once map + marker library are ready
   useEffect(() => {
-    if (!map) return;
+    if (!map || !markerLib) return;
+
     clustererRef.current = new MarkerClusterer({
       map,
       renderer: {
@@ -103,7 +105,7 @@ export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
           const el = document.createElement("div");
           el.style.cssText = `width:40px;height:40px;border-radius:50%;background:#7c3aed;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);`;
           el.textContent = count > 999 ? "999+" : String(count);
-          return new google.maps.marker.AdvancedMarkerElement({
+          return new markerLib.AdvancedMarkerElement({
             position,
             content: el,
             zIndex: 100,
@@ -111,23 +113,23 @@ export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
         },
       },
     });
+
     return () => {
       clustererRef.current?.clearMarkers();
       clustererRef.current = null;
     };
-  }, [map]);
+  }, [map, markerLib]);
 
-  // Sync markers when salons change
+  // Sync markers when salons or markerLib change
   useEffect(() => {
-    if (!clustererRef.current || !map) return;
+    if (!clustererRef.current || !markerLib) return;
 
-    // Update lookup index
     salonsById.current.clear();
     for (const salon of salons) salonsById.current.set(salon.id, salon);
 
     const currentIds = new Set(salons.map((s) => s.id));
 
-    // Remove markers no longer in view
+    // Remove stale markers
     const toRemove: google.maps.marker.AdvancedMarkerElement[] = [];
     for (const [id, marker] of markersRef.current) {
       if (!currentIds.has(id)) {
@@ -148,7 +150,7 @@ export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
         setSelected(salonsById.current.get(salon.id) || salon);
       });
 
-      const marker = new google.maps.marker.AdvancedMarkerElement({
+      const marker = new markerLib.AdvancedMarkerElement({
         position: { lat: salon.lat, lng: salon.lng },
         content: el,
         zIndex: 200,
@@ -158,7 +160,7 @@ export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
       toAdd.push(marker);
     }
     if (toAdd.length > 0) clustererRef.current.addMarkers(toAdd);
-  }, [map, salons]);
+  }, [salons, markerLib]);
 
   if (!selected) return null;
 
