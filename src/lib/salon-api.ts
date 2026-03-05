@@ -15,7 +15,7 @@ export async function fetchSalons(
     cat: categoryId || null,
     promo_only: promoOnly || false,
     promoted_only: promotedOnly || false,
-    max_results: 300,
+    max_results: 5000,
   });
 
   if (error) throw error;

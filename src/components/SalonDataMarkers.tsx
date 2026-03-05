@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { useEffect, useRef, useState } from "react";
+import { useMap, InfoWindow } from "@vis.gl/react-google-maps";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import type { Salon, SalonService } from "@/types";
 
 const CATEGORY_COLORS: Record<number, string> = {
@@ -21,6 +22,16 @@ function getCategoryColor(categoryId: number | null): string {
 function formatPrice(price: number | null): string {
   if (price == null) return "—";
   return `${Math.round(price)} zł`;
+}
+
+function groupByCategory(services: SalonService[]): Map<string, SalonService[]> {
+  const map = new Map<string, SalonService[]>();
+  for (const svc of services) {
+    const cat = svc.category || "Inne";
+    if (!map.has(cat)) map.set(cat, []);
+    map.get(cat)!.push(svc);
+  }
+  return map;
 }
 
 function ServiceRow({ service }: { service: SalonService }) {
@@ -47,14 +58,28 @@ function ServiceRow({ service }: { service: SalonService }) {
   );
 }
 
-function groupByCategory(services: SalonService[]): Map<string, SalonService[]> {
-  const map = new Map<string, SalonService[]>();
-  for (const svc of services) {
-    const cat = svc.category || "Inne";
-    if (!map.has(cat)) map.set(cat, []);
-    map.get(cat)!.push(svc);
+function buildMarkerElement(salon: Salon): HTMLElement {
+  const color = getCategoryColor(salon.category_id);
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+
+  const dot = document.createElement("div");
+  dot.style.cssText = `position:relative;width:28px;height:28px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
+  dot.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M20 4L8.12 15.88"/><path d="M14.47 14.48L20 20"/><path d="M8.12 8.12L12 12"/></svg>`;
+
+  if (salon.has_promotion && salon.max_discount_pct > 0) {
+    const badge = document.createElement("div");
+    badge.style.cssText = `position:absolute;top:-6px;right:-10px;background:#dc2626;color:white;font-size:9px;font-weight:700;padding:1px 4px;border-radius:6px;line-height:14px;white-space:nowrap;`;
+    badge.textContent = `-${salon.max_discount_pct}%`;
+    dot.appendChild(badge);
   }
-  return map;
+
+  const pin = document.createElement("div");
+  pin.style.cssText = `width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ${color};margin-top:-1px;`;
+
+  wrapper.appendChild(dot);
+  wrapper.appendChild(pin);
+  return wrapper;
 }
 
 interface SalonDataMarkersProps {
@@ -62,161 +87,165 @@ interface SalonDataMarkersProps {
 }
 
 export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
+  const map = useMap();
   const [selected, setSelected] = useState<Salon | null>(null);
+  const clustererRef = useRef<MarkerClusterer | null>(null);
+  const markersRef = useRef<Map<number, google.maps.marker.AdvancedMarkerElement>>(new Map());
+  const salonsById = useRef<Map<number, Salon>>(new Map());
+
+  // Init clusterer once
+  useEffect(() => {
+    if (!map) return;
+    clustererRef.current = new MarkerClusterer({
+      map,
+      renderer: {
+        render({ count, position }) {
+          const el = document.createElement("div");
+          el.style.cssText = `width:40px;height:40px;border-radius:50%;background:#7c3aed;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);`;
+          el.textContent = count > 999 ? "999+" : String(count);
+          return new google.maps.marker.AdvancedMarkerElement({
+            position,
+            content: el,
+            zIndex: 100,
+          });
+        },
+      },
+    });
+    return () => {
+      clustererRef.current?.clearMarkers();
+      clustererRef.current = null;
+    };
+  }, [map]);
+
+  // Sync markers when salons change
+  useEffect(() => {
+    if (!clustererRef.current || !map) return;
+
+    // Update lookup index
+    salonsById.current.clear();
+    for (const salon of salons) salonsById.current.set(salon.id, salon);
+
+    const currentIds = new Set(salons.map((s) => s.id));
+
+    // Remove markers no longer in view
+    const toRemove: google.maps.marker.AdvancedMarkerElement[] = [];
+    for (const [id, marker] of markersRef.current) {
+      if (!currentIds.has(id)) {
+        toRemove.push(marker);
+        markersRef.current.delete(id);
+      }
+    }
+    if (toRemove.length > 0) clustererRef.current.removeMarkers(toRemove);
+
+    // Add new markers
+    const toAdd: google.maps.marker.AdvancedMarkerElement[] = [];
+    for (const salon of salons) {
+      if (markersRef.current.has(salon.id)) continue;
+
+      const el = buildMarkerElement(salon);
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setSelected(salonsById.current.get(salon.id) || salon);
+      });
+
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position: { lat: salon.lat, lng: salon.lng },
+        content: el,
+        zIndex: 200,
+      });
+
+      markersRef.current.set(salon.id, marker);
+      toAdd.push(marker);
+    }
+    if (toAdd.length > 0) clustererRef.current.addMarkers(toAdd);
+  }, [map, salons]);
+
+  if (!selected) return null;
 
   return (
-    <>
-      {salons.map((salon) => {
-        const color = getCategoryColor(salon.category_id);
-        return (
-          <AdvancedMarker
-            key={salon.id}
-            position={{ lat: salon.lat, lng: salon.lng }}
-            onClick={() => setSelected(salon)}
-            zIndex={200}
-          >
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
-              <div style={{ position: "relative" }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    backgroundColor: color,
-                    border: "2px solid white",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="6" cy="6" r="3" />
-                    <path d="M20 4L8.12 15.88" />
-                    <path d="M14.47 14.48L20 20" />
-                    <path d="M8.12 8.12L12 12" />
-                  </svg>
-                </div>
-                {salon.has_promotion && salon.max_discount_pct > 0 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: -6,
-                      right: -10,
-                      backgroundColor: "#dc2626",
-                      color: "white",
-                      fontSize: 9,
-                      fontWeight: 700,
-                      padding: "1px 4px",
-                      borderRadius: 6,
-                      lineHeight: "14px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    -{salon.max_discount_pct}%
-                  </div>
-                )}
-              </div>
-              <div
-                style={{
-                  width: 0,
-                  height: 0,
-                  borderLeft: "5px solid transparent",
-                  borderRight: "5px solid transparent",
-                  borderTop: `7px solid ${color}`,
-                  marginTop: -1,
-                }}
-              />
-            </div>
-          </AdvancedMarker>
-        );
-      })}
-      {selected && (
-        <InfoWindow
-          position={{ lat: selected.lat, lng: selected.lng }}
-          onCloseClick={() => setSelected(null)}
-          headerDisabled
+    <InfoWindow
+      position={{ lat: selected.lat, lng: selected.lng }}
+      onCloseClick={() => setSelected(null)}
+      headerDisabled
+    >
+      <div style={{ padding: 4, minWidth: 240, maxWidth: 300, position: "relative", paddingRight: 24 }}>
+        <button
+          onClick={() => setSelected(null)}
+          style={{ position: "absolute", top: 0, right: 0, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", cursor: "pointer", fontSize: 18, border: "none", background: "none" }}
+          aria-label="Close"
         >
-          <div style={{ padding: 4, minWidth: 240, maxWidth: 300, position: "relative", paddingRight: 24 }}>
-            <button
-              onClick={() => setSelected(null)}
-              style={{ position: "absolute", top: 0, right: 0, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", cursor: "pointer", fontSize: 18, border: "none", background: "none" }}
-              aria-label="Close"
+          &times;
+        </button>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 2 }}>
+          {selected.name}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          {selected.rating != null && (
+            <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 600 }}>
+              {"★"} {Number(selected.rating).toFixed(1)}
+            </span>
+          )}
+          {selected.review_count != null && selected.review_count > 0 && (
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>
+              ({selected.review_count})
+            </span>
+          )}
+          {selected.category_name && (
+            <span
+              style={{
+                fontSize: 11,
+                color: getCategoryColor(selected.category_id),
+                backgroundColor: getCategoryColor(selected.category_id) + "15",
+                padding: "1px 6px",
+                borderRadius: 4,
+                fontWeight: 500,
+              }}
             >
-              &times;
-            </button>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 2 }}>
-              {selected.name}
+              {selected.category_name}
+            </span>
+          )}
+        </div>
+        {selected.address && (
+          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
+            {selected.address}
+          </div>
+        )}
+        {selected.has_promotion && selected.max_discount_pct > 0 && (
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#dc2626",
+              backgroundColor: "#fef2f2",
+              padding: "4px 8px",
+              borderRadius: 6,
+              marginBottom: 8,
+              textAlign: "center",
+            }}
+          >
+            Oszczedz do {selected.max_discount_pct}%
+          </div>
+        )}
+        {selected.services && selected.services.length > 0 && (
+          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", marginBottom: 4 }}>
+              Cennik ({selected.services.length} usług)
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              {selected.rating != null && (
-                <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 600 }}>
-                  {"★"} {Number(selected.rating).toFixed(1)}
-                </span>
-              )}
-              {selected.review_count != null && selected.review_count > 0 && (
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>
-                  ({selected.review_count})
-                </span>
-              )}
-              {selected.category_name && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: getCategoryColor(selected.category_id),
-                    backgroundColor: getCategoryColor(selected.category_id) + "15",
-                    padding: "1px 6px",
-                    borderRadius: 4,
-                    fontWeight: 500,
-                  }}
-                >
-                  {selected.category_name}
-                </span>
-              )}
-            </div>
-            {selected.address && (
-              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
-                {selected.address}
-              </div>
-            )}
-            {selected.has_promotion && selected.max_discount_pct > 0 && (
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#dc2626",
-                  backgroundColor: "#fef2f2",
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                Oszczedz do {selected.max_discount_pct}%
-              </div>
-            )}
-            {selected.services && selected.services.length > 0 && (
-              <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", marginBottom: 4 }}>
-                  Cennik ({selected.services.length} usług)
-                </div>
-                <div style={{ maxHeight: 220, overflowY: "auto" }}>
-                  {Array.from(groupByCategory(selected.services)).map(([cat, svcs]) => (
-                    <div key={cat} style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", padding: "2px 0", letterSpacing: "0.05em" }}>
-                        {cat}
-                      </div>
-                      {svcs.map((svc, i) => (
-                        <ServiceRow key={i} service={svc} />
-                      ))}
-                    </div>
+            <div style={{ maxHeight: 220, overflowY: "auto" }}>
+              {Array.from(groupByCategory(selected.services)).map(([cat, svcs]) => (
+                <div key={cat} style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", padding: "2px 0", letterSpacing: "0.05em" }}>
+                    {cat}
+                  </div>
+                  {svcs.map((svc, i) => (
+                    <ServiceRow key={i} service={svc} />
                   ))}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </InfoWindow>
-      )}
-    </>
+        )}
+      </div>
+    </InfoWindow>
   );
 }
