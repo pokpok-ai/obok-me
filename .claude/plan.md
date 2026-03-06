@@ -68,6 +68,20 @@
 - [x] **FilterBar placement** — search field between function type buttons and "Od" date input
 - [x] **Prerequisite**: Places API + Geocoding API enabled on Google Maps API key
 
+### Search UX Enhancements ✅
+- [x] **PageSwitch** — `PageSwitch.tsx` segmented pill toggle (Nieruchomosci ↔ Salony) at top of both pages
+- [x] **Search field widened** — 320px (was 200px) on both pages
+- [x] **SearchPin with building highlight** — `SearchPin.tsx` shows red pin + OSM building polygon overlay
+  - OSM Overpass API for building outlines, point-in-polygon to select correct building
+  - Circle (30m) as instant fallback while Overpass loads
+  - Clear button removes pin + overlay on both pages
+- [x] **Combined salon + address search** — `SalonSearch.tsx` on `/salons` queries Supabase `booksy_salons_by_name` RPC + Google Places in parallel
+  - Dropdown with "Salony" section (name, category badge, rating) and "Adresy" section
+  - Salon selection → red animated marker highlight (no SearchPin overlap)
+  - Address selection → SearchPin with building polygon
+- [x] **Focused salon marker** — `SalonDataMarkers.tsx` accepts `focusedSalonId`, restyling marker to red with pulsing CSS ring animations, auto-opens InfoWindow
+  - Handles timing: checks focusedSalonId in both salon sync effect (new data) and focus effect (ID change)
+
 ### Final function_type set (4 values only)
 | function_type | DB count | % |
 |---|---|---|
@@ -166,6 +180,9 @@
 | Mortgage affordability | NBP rate + viewport price | ✅ DONE |
 | Buy vs Rent | Mortgage vs NBP avg rent | ✅ DONE |
 | Address search + zoom | Google Places Autocomplete | ✅ DONE |
+| Building highlight on search | OSM Overpass API + point-in-polygon | ✅ DONE |
+| Page switch (Nieruchomosci/Salony) | Client-side routing | ✅ DONE |
+| Salon name search + auto-focus | Supabase RPC + marker highlight | ✅ DONE |
 | Smart Comps (nearby similar transactions) | RCN + PostGIS ST_DWithin | ✅ DONE |
 | District Rankings (18 dzielnice) | RCN grouped by geography | ✅ DONE |
 | Price Estimation for Address | RCN percentiles at point | ✅ DONE |
@@ -211,3 +228,10 @@
 | `src/components/ComparableTransactions.tsx` | Smart Comps overlay (nearby similar transactions) |
 | `src/components/PriceEstimateCard.tsx` | Price estimate overlay (P20/median/P80 after address search) |
 | `src/components/DistrictRankings.tsx` | 18 Warsaw districts ranked by avg price/m² |
+| `src/components/PageSwitch.tsx` | Segmented pill toggle: Nieruchomosci ↔ Salony |
+| `src/components/SearchPin.tsx` | Red pin + OSM building polygon highlight on address search |
+| `src/components/SalonSearch.tsx` | Combined salon name + address search (Supabase + Google Places) |
+| `src/components/SalonFilterBar.tsx` | /salons filter bar (categories, promos, search) |
+| `src/components/SalonDataMarkers.tsx` | Salon markers with clustering, InfoWindow, focused highlight |
+| `src/lib/salon-search.ts` | Supabase RPC wrapper for `booksy_salons_by_name` |
+| `src/app/salons/page.tsx` | /salons page (salon map with filters + search) |
