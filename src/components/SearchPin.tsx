@@ -1,6 +1,7 @@
 "use client";
 
-import { AdvancedMarker } from "@vis.gl/react-google-maps";
+import { useEffect, useRef } from "react";
+import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 
 interface SearchPinProps {
   lat: number;
@@ -8,6 +9,34 @@ interface SearchPinProps {
 }
 
 export function SearchPin({ lat, lng }: SearchPinProps) {
+  const map = useMap();
+  const circleRef = useRef<google.maps.Circle | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+      circleRef.current = null;
+    }
+
+    circleRef.current = new google.maps.Circle({
+      center: { lat, lng },
+      radius: 30,
+      strokeColor: "#ef4444",
+      strokeOpacity: 0.8,
+      strokeWeight: 3,
+      fillColor: "#ef4444",
+      fillOpacity: 0.18,
+      map,
+    });
+
+    return () => {
+      circleRef.current?.setMap(null);
+      circleRef.current = null;
+    };
+  }, [map, lat, lng]);
+
   return (
     <AdvancedMarker position={{ lat, lng }} zIndex={9999}>
       <div className="relative flex items-center justify-center">
