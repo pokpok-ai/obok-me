@@ -5,6 +5,7 @@ import { useMapsLibrary } from "@vis.gl/react-google-maps";
 
 interface AddressSearchProps {
   onSelect: (position: { lat: number; lng: number }, address?: string, placeId?: string) => void;
+  onClear?: () => void;
 }
 
 const WARSAW_BOUNDS = {
@@ -14,7 +15,7 @@ const WARSAW_BOUNDS = {
   west: 20.75,
 };
 
-export function AddressSearch({ onSelect }: AddressSearchProps) {
+export function AddressSearch({ onSelect, onClear }: AddressSearchProps) {
   const places = useMapsLibrary("places");
   const [query, setQuery] = useState("");
   const [predictions, setPredictions] = useState<
@@ -150,6 +151,7 @@ export function AddressSearch({ onSelect }: AddressSearchProps) {
               setQuery("");
               setPredictions([]);
               setOpen(false);
+              onClear?.();
             }}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >

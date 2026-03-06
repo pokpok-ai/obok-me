@@ -110,7 +110,7 @@ export function SearchPin({ lat, lng }: SearchPinProps) {
 
   return (
     <AdvancedMarker position={{ lat, lng }} zIndex={9999}>
-      <div className="relative flex items-center justify-center">
+      <div className="relative flex items-center justify-center" style={{ pointerEvents: "none" }}>
         {/* Pulsing ring */}
         <div
           className="absolute w-16 h-16 rounded-full animate-ping"

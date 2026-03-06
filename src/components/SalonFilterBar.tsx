@@ -13,6 +13,8 @@ interface SalonFilterBarProps {
   loading: boolean;
   onFilterChange: (filters: SalonFilters) => void;
   onPlaceSelect: (position: { lat: number; lng: number }, address?: string) => void;
+  onSalonSelect?: (salonId: number, position: { lat: number; lng: number }) => void;
+  onSearchClear?: () => void;
 }
 
 const CATEGORIES = [
@@ -30,6 +32,8 @@ export function SalonFilterBar({
   loading,
   onFilterChange,
   onPlaceSelect,
+  onSalonSelect,
+  onSearchClear,
 }: SalonFilterBarProps) {
   return (
     <div className="absolute top-16 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
@@ -69,7 +73,7 @@ export function SalonFilterBar({
       </button>
 
       {/* Salon + address search */}
-      <SalonSearch onSelect={onPlaceSelect} />
+      <SalonSearch onSelect={onPlaceSelect} onSalonSelect={onSalonSelect} onClear={onSearchClear} />
 
       {/* Count + loading */}
       <div className="ml-auto flex items-center gap-2">

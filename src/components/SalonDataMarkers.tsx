@@ -84,9 +84,10 @@ function buildMarkerElement(salon: Salon): HTMLElement {
 
 interface SalonDataMarkersProps {
   salons: Salon[];
+  focusedSalonId?: number | null;
 }
 
-export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
+export function SalonDataMarkers({ salons, focusedSalonId }: SalonDataMarkersProps) {
   const map = useMap();
   const markerLib = useMapsLibrary("marker");
   const [selected, setSelected] = useState<Salon | null>(null);
@@ -161,6 +162,15 @@ export function SalonDataMarkers({ salons }: SalonDataMarkersProps) {
     }
     if (toAdd.length > 0) clustererRef.current.addMarkers(toAdd);
   }, [salons, markerLib]);
+
+  // Auto-open InfoWindow when focusedSalonId changes
+  useEffect(() => {
+    if (focusedSalonId == null) return;
+    const salon = salonsById.current.get(focusedSalonId);
+    if (salon) {
+      setSelected(salon);
+    }
+  }, [focusedSalonId]);
 
   if (!selected) return null;
 

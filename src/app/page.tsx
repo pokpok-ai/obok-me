@@ -168,6 +168,7 @@ export default function HomePage() {
         onFilterChange={setFilters}
         onTypeClick={handleTypeClick}
         onPlaceSelect={handlePlaceSelect}
+        onSearchClear={() => setPriceEstimate(null)}
       />
       <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
         {!heatmapEnabled && (

@@ -18,6 +18,7 @@ export default function SalonsPage() {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [mapZoom, setMapZoom] = useState<number | null>(null);
   const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; placeId?: string } | null>(null);
+  const [focusedSalonId, setFocusedSalonId] = useState<number | null>(null);
   const [filters, setFilters] = useState<SalonFilters>({
     categoryName: null,
     promoOnly: false,
@@ -50,9 +51,25 @@ export default function SalonsPage() {
       setMapCenter(position);
       setMapZoom(16);
       setSearchedLocation({ ...position, placeId });
+      setFocusedSalonId(null);
     },
     []
   );
+
+  const handleSalonSelect = useCallback(
+    (salonId: number, position: { lat: number; lng: number }) => {
+      setMapCenter(position);
+      setMapZoom(17);
+      setSearchedLocation(null); // No SearchPin for salon selection
+      setFocusedSalonId(salonId);
+    },
+    []
+  );
+
+  const handleSearchClear = useCallback(() => {
+    setSearchedLocation(null);
+    setFocusedSalonId(null);
+  }, []);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
@@ -61,7 +78,7 @@ export default function SalonsPage() {
       <main className="h-screen w-screen relative overflow-hidden">
         <PageSwitch active="salons" />
         <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
-          <SalonDataMarkers salons={salons} />
+          <SalonDataMarkers salons={salons} focusedSalonId={focusedSalonId} />
           {searchedLocation && <SearchPin lat={searchedLocation.lat} lng={searchedLocation.lng} placeId={searchedLocation.placeId} />}
         </MapContainer>
         <SalonFilterBar
@@ -70,6 +87,8 @@ export default function SalonsPage() {
           loading={loading}
           onFilterChange={setFilters}
           onPlaceSelect={handlePlaceSelect}
+          onSalonSelect={handleSalonSelect}
+          onSearchClear={handleSearchClear}
         />
         <LocateMe onLocate={handleLocate} />
         {loading && salons.length === 0 && (

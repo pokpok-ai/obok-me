@@ -21,6 +21,7 @@ interface FilterBarProps {
   onFilterChange: (filters: Filters) => void;
   onTypeClick?: (type: string) => void;
   onPlaceSelect?: (position: { lat: number; lng: number }, address?: string) => void;
+  onSearchClear?: () => void;
 }
 
 const typeColors: Record<string, string> = {
@@ -53,6 +54,7 @@ export function FilterBar({
   onFilterChange,
   onTypeClick,
   onPlaceSelect,
+  onSearchClear,
 }: FilterBarProps) {
   return (
     <div className="absolute top-16 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
@@ -76,7 +78,7 @@ export function FilterBar({
       </div>
 
       {/* Address search */}
-      {onPlaceSelect && <AddressSearch onSelect={onPlaceSelect} />}
+      {onPlaceSelect && <AddressSearch onSelect={onPlaceSelect} onClear={onSearchClear} />}
 
       {/* Date range */}
       <div className="flex items-center gap-2 ml-auto">

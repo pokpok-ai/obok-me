@@ -6,6 +6,8 @@ import { searchSalonsByName, type SalonSearchResult } from "@/lib/salon-search";
 
 interface SalonSearchProps {
   onSelect: (position: { lat: number; lng: number }, address?: string, placeId?: string) => void;
+  onSalonSelect?: (salonId: number, position: { lat: number; lng: number }) => void;
+  onClear?: () => void;
 }
 
 const WARSAW_BOUNDS = {
@@ -23,7 +25,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   inne: "#64748b",
 };
 
-export function SalonSearch({ onSelect }: SalonSearchProps) {
+export function SalonSearch({ onSelect, onSalonSelect, onClear }: SalonSearchProps) {
   const places = useMapsLibrary("places");
   const [query, setQuery] = useState("");
   const [salonResults, setSalonResults] = useState<SalonSearchResult[]>([]);
@@ -102,6 +104,7 @@ export function SalonSearch({ onSelect }: SalonSearchProps) {
 
   const handleSalonSelect = (salon: SalonSearchResult) => {
     onSelect({ lat: salon.lat, lng: salon.lng }, salon.name);
+    onSalonSelect?.(salon.id, { lat: salon.lat, lng: salon.lng });
     setQuery(salon.name);
     setOpen(false);
     setSalonResults([]);
@@ -164,6 +167,7 @@ export function SalonSearch({ onSelect }: SalonSearchProps) {
               setSalonResults([]);
               setPredictions([]);
               setOpen(false);
+              onClear?.();
             }}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
