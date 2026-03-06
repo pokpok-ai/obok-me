@@ -66,7 +66,7 @@ export function SalonSearch({ onSelect }: SalonSearchProps) {
       // Fetch salon names and Google Places in parallel
       searchSalonsByName(input).then((salons) => {
         setSalonResults(salons);
-        if (salons.length > 0 || predictions.length > 0) setOpen(true);
+        if (salons.length > 0) setOpen(true);
       });
 
       if (autocompleteService.current) {
@@ -91,7 +91,7 @@ export function SalonSearch({ onSelect }: SalonSearchProps) {
         );
       }
     },
-    [predictions.length]
+    []
   );
 
   const handleInputChange = (value: string) => {
