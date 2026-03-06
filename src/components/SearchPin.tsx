@@ -9,6 +9,34 @@ interface SearchPinProps {
   placeId?: string;
 }
 
+function pointInPolygon(
+  pt: { lat: number; lng: number },
+  poly: { lat: number; lng: number }[]
+): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const yi = poly[i].lat, xi = poly[i].lng;
+    const yj = poly[j].lat, xj = poly[j].lng;
+    if ((yi > pt.lat) !== (yj > pt.lat) && pt.lng < ((xj - xi) * (pt.lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function extractCoords(el: { type: string; geometry?: { lat: number; lon: number }[]; members?: { role: string; geometry?: { lat: number; lon: number }[] }[] }): { lat: number; lng: number }[] | null {
+  if (el.type === "way" && el.geometry) {
+    return el.geometry.map((g) => ({ lat: g.lat, lng: g.lon }));
+  }
+  if (el.type === "relation" && el.members) {
+    const outer = el.members.find((m) => m.role === "outer" && m.geometry);
+    if (outer?.geometry) {
+      return outer.geometry.map((g) => ({ lat: g.lat, lng: g.lon }));
+    }
+  }
+  return null;
+}
+
 async function fetchBuildingPolygon(
   lat: number,
   lng: number
@@ -22,28 +50,26 @@ async function fetchBuildingPolygon(
     const data = await res.json();
     if (!data.elements || data.elements.length === 0) return null;
 
-    // Pick the first building element with geometry
+    const pt = { lat, lng };
+
+    // First: find the building that contains the point
     for (const el of data.elements) {
-      if (el.type === "way" && el.geometry) {
-        return el.geometry.map((g: { lat: number; lon: number }) => ({
-          lat: g.lat,
-          lng: g.lon,
-        }));
-      }
-      if (el.type === "relation" && el.members) {
-        const outer = el.members.find(
-          (m: { role: string; geometry?: { lat: number; lon: number }[] }) =>
-            m.role === "outer" && m.geometry
-        );
-        if (outer?.geometry) {
-          return outer.geometry.map((g: { lat: number; lon: number }) => ({
-            lat: g.lat,
-            lng: g.lon,
-          }));
-        }
-      }
+      const coords = extractCoords(el);
+      if (coords && pointInPolygon(pt, coords)) return coords;
     }
-    return null;
+
+    // Fallback: closest building by distance to centroid
+    let bestCoords: { lat: number; lng: number }[] | null = null;
+    let bestDist = Infinity;
+    for (const el of data.elements) {
+      const coords = extractCoords(el);
+      if (!coords) continue;
+      const cx = coords.reduce((s, c) => s + c.lat, 0) / coords.length;
+      const cy = coords.reduce((s, c) => s + c.lng, 0) / coords.length;
+      const d = (cx - lat) ** 2 + (cy - lng) ** 2;
+      if (d < bestDist) { bestDist = d; bestCoords = coords; }
+    }
+    return bestCoords;
   } catch {
     return null;
   }
