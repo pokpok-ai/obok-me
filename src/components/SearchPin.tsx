@@ -9,7 +9,7 @@ interface SearchPinProps {
   placeId?: string;
 }
 
-export function SearchPin({ lat, lng, placeId }: SearchPinProps) {
+export function SearchPin({ lat, lng }: SearchPinProps) {
   const map = useMap();
   const circleRef = useRef<google.maps.Circle | null>(null);
 
@@ -23,12 +23,12 @@ export function SearchPin({ lat, lng, placeId }: SearchPinProps) {
 
     circleRef.current = new google.maps.Circle({
       center: { lat, lng },
-      radius: 30,
-      strokeColor: "#ef4444",
-      strokeOpacity: 0.8,
+      radius: 50,
+      strokeColor: "#dc2626",
+      strokeOpacity: 0.9,
       strokeWeight: 3,
       fillColor: "#ef4444",
-      fillOpacity: 0.18,
+      fillOpacity: 0.3,
       map,
     });
 
@@ -38,34 +38,6 @@ export function SearchPin({ lat, lng, placeId }: SearchPinProps) {
     };
   }, [map, lat, lng]);
 
-  // Highlight the building polygon via FeatureLayer
-  useEffect(() => {
-    if (!map || !placeId) return;
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const featureLayer = (map as any).getFeatureLayer("BUILDING");
-      if (!featureLayer) return;
-
-      featureLayer.style = (params: { feature: { placeId: string } }) => {
-        if (params.feature.placeId === placeId) {
-          return {
-            fillColor: "#ef4444",
-            fillOpacity: 0.5,
-            strokeColor: "#dc2626",
-            strokeWeight: 3,
-          };
-        }
-        return null;
-      };
-
-      return () => {
-        featureLayer.style = null;
-      };
-    } catch {
-      // FeatureLayer not available for this map ID — silently ignore
-    }
-  }, [map, placeId]);
 
   return (
     <AdvancedMarker position={{ lat, lng }} zIndex={9999}>
