@@ -13,7 +13,7 @@ async function fetchBuildingPolygon(
   lat: number,
   lng: number
 ): Promise<{ lat: number; lng: number }[] | null> {
-  const query = `[out:json][timeout:5];(way["building"](around:30,${lat},${lng});relation["building"](around:30,${lat},${lng}););out geom;`;
+  const query = `[out:json][timeout:5];(way["building"](around:50,${lat},${lng});relation["building"](around:50,${lat},${lng}););out geom;`;
   try {
     const res = await fetch(
       `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
@@ -66,17 +66,18 @@ export function SearchPin({ lat, lng }: SearchPinProps) {
     }
     circleRef.current = new google.maps.Circle({
       center: { lat, lng },
-      radius: 50,
+      radius: 30,
       strokeColor: "#dc2626",
       strokeOpacity: 0.9,
-      strokeWeight: 3,
+      strokeWeight: 2,
       fillColor: "#ef4444",
-      fillOpacity: 0.3,
+      fillOpacity: 0.2,
       map,
     });
 
     fetchBuildingPolygon(lat, lng).then((coords) => {
-      if (cancelled || !coords) return;
+      if (cancelled) return;
+      if (!coords) return; // Keep circle as fallback
 
       // Remove circle — polygon replaces it
       if (circleRef.current) {
@@ -91,11 +92,12 @@ export function SearchPin({ lat, lng }: SearchPinProps) {
       polygonRef.current = new google.maps.Polygon({
         paths: coords,
         strokeColor: "#dc2626",
-        strokeOpacity: 0.9,
+        strokeOpacity: 1,
         strokeWeight: 3,
         fillColor: "#ef4444",
-        fillOpacity: 0.35,
+        fillOpacity: 0.4,
         map,
+        zIndex: 500,
       });
     });
 
