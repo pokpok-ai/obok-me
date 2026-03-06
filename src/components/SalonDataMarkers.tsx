@@ -84,12 +84,16 @@ function buildMarkerElement(salon: Salon, focused = false): HTMLElement {
 
   if (focused) {
     injectPulseAnimation();
+    // Rings are positioned relative to the dot center (offset by pin height below)
+    const ringContainer = document.createElement("div");
+    ringContainer.style.cssText = `position:absolute;top:17px;left:50%;transform:translate(-50%,-50%);width:0;height:0;pointer-events:none;z-index:0;`;
     const ring1 = document.createElement("div");
-    ring1.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.3);animation:salon-ping 1.5s cubic-bezier(0,0,0.2,1) infinite;pointer-events:none;z-index:0;`;
+    ring1.style.cssText = `position:absolute;top:-40px;left:-40px;width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,0.25);animation:salon-ping 1.5s cubic-bezier(0,0,0.2,1) infinite;`;
     const ring2 = document.createElement("div");
-    ring2.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.2);animation:salon-pulse 2s ease-in-out infinite;pointer-events:none;z-index:0;`;
-    wrapper.appendChild(ring1);
-    wrapper.appendChild(ring2);
+    ring2.style.cssText = `position:absolute;top:-30px;left:-30px;width:60px;height:60px;border-radius:50%;background:rgba(239,68,68,0.15);animation:salon-pulse 2s ease-in-out infinite;`;
+    ringContainer.appendChild(ring1);
+    ringContainer.appendChild(ring2);
+    wrapper.appendChild(ringContainer);
   }
 
   const dot = document.createElement("div");
