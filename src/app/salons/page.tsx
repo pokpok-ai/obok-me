@@ -10,12 +10,14 @@ import { LocateMe } from "@/components/LocateMe";
 import { useSalons } from "@/hooks/useSalons";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PageSwitch } from "@/components/PageSwitch";
+import { SearchPin } from "@/components/SearchPin";
 import type { ViewBounds } from "@/types";
 
 export default function SalonsPage() {
   const [bounds, setBounds] = useState<ViewBounds | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [mapZoom, setMapZoom] = useState<number | null>(null);
+  const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [filters, setFilters] = useState<SalonFilters>({
     categoryName: null,
     promoOnly: false,
@@ -47,6 +49,7 @@ export default function SalonsPage() {
     (position: { lat: number; lng: number }) => {
       setMapCenter(position);
       setMapZoom(16);
+      setSearchedLocation(position);
     },
     []
   );
@@ -59,6 +62,7 @@ export default function SalonsPage() {
         <PageSwitch active="salons" />
         <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
           <SalonDataMarkers salons={salons} />
+          {searchedLocation && <SearchPin lat={searchedLocation.lat} lng={searchedLocation.lng} />}
         </MapContainer>
         <SalonFilterBar
           filters={filters}

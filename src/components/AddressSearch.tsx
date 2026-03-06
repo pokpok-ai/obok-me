@@ -142,7 +142,7 @@ export function AddressSearch({ onSelect }: AddressSearchProps) {
           onKeyDown={handleKeyDown}
           onFocus={() => predictions.length > 0 && setOpen(true)}
           placeholder="Szukaj adresu..."
-          className="w-[200px] pl-7 pr-2 py-1.5 rounded-lg border border-gray-200 text-sm bg-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+          className="w-[320px] pl-7 pr-2 py-1.5 rounded-lg border border-gray-200 text-sm bg-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
         />
         {query && (
           <button

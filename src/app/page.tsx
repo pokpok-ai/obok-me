@@ -17,6 +17,7 @@ import { useHeatmap } from "@/hooks/useHeatmap";
 import { useExternalData } from "@/hooks/useExternalData";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PageSwitch } from "@/components/PageSwitch";
+import { SearchPin } from "@/components/SearchPin";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
 export default function HomePage() {
@@ -173,6 +174,7 @@ export default function HomePage() {
         )}
         {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
         <SalonMarkers />
+        {priceEstimate && <SearchPin lat={priceEstimate.lat} lng={priceEstimate.lng} />}
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
       <button
