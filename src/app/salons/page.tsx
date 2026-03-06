@@ -60,7 +60,7 @@ export default function SalonsPage() {
     (salonId: number, position: { lat: number; lng: number }) => {
       setMapCenter(position);
       setMapZoom(17);
-      setSearchedLocation(position); // Show red overlay on salon too
+      setSearchedLocation(null); // No SearchPin for salon — marker highlights itself
       setFocusedSalonId(salonId);
     },
     []

@@ -58,14 +58,43 @@ function ServiceRow({ service }: { service: SalonService }) {
   );
 }
 
-function buildMarkerElement(salon: Salon): HTMLElement {
-  const color = getCategoryColor(salon.category_id);
+// Inject pulse keyframes once
+let pulseInjected = false;
+function injectPulseAnimation() {
+  if (pulseInjected) return;
+  pulseInjected = true;
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes salon-ping {
+      0% { transform: scale(1); opacity: 0.8; }
+      75%, 100% { transform: scale(2.5); opacity: 0; }
+    }
+    @keyframes salon-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.5); opacity: 0.15; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function buildMarkerElement(salon: Salon, focused = false): HTMLElement {
+  const color = focused ? "#ef4444" : getCategoryColor(salon.category_id);
   const wrapper = document.createElement("div");
-  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;position:relative;";
+
+  if (focused) {
+    injectPulseAnimation();
+    const ring1 = document.createElement("div");
+    ring1.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.3);animation:salon-ping 1.5s cubic-bezier(0,0,0.2,1) infinite;pointer-events:none;z-index:0;`;
+    const ring2 = document.createElement("div");
+    ring2.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.2);animation:salon-pulse 2s ease-in-out infinite;pointer-events:none;z-index:0;`;
+    wrapper.appendChild(ring1);
+    wrapper.appendChild(ring2);
+  }
 
   const dot = document.createElement("div");
-  dot.style.cssText = `position:relative;width:28px;height:28px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;`;
-  dot.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M20 4L8.12 15.88"/><path d="M14.47 14.48L20 20"/><path d="M8.12 8.12L12 12"/></svg>`;
+  dot.style.cssText = `position:relative;width:${focused ? 34 : 28}px;height:${focused ? 34 : 28}px;border-radius:50%;background:${color};border:${focused ? 3 : 2}px solid white;box-shadow:0 ${focused ? 2 : 1}px ${focused ? 8 : 4}px rgba(0,0,0,${focused ? 0.4 : 0.25});display:flex;align-items:center;justify-content:center;z-index:1;`;
+  dot.innerHTML = `<svg width="${focused ? 16 : 14}" height="${focused ? 16 : 14}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M20 4L8.12 15.88"/><path d="M14.47 14.48L20 20"/><path d="M8.12 8.12L12 12"/></svg>`;
 
   if (salon.has_promotion && salon.max_discount_pct > 0) {
     const badge = document.createElement("div");
@@ -75,7 +104,7 @@ function buildMarkerElement(salon: Salon): HTMLElement {
   }
 
   const pin = document.createElement("div");
-  pin.style.cssText = `width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ${color};margin-top:-1px;`;
+  pin.style.cssText = `width:0;height:0;border-left:${focused ? 6 : 5}px solid transparent;border-right:${focused ? 6 : 5}px solid transparent;border-top:${focused ? 8 : 7}px solid ${color};margin-top:-1px;z-index:1;`;
 
   wrapper.appendChild(dot);
   wrapper.appendChild(pin);
@@ -163,12 +192,39 @@ export function SalonDataMarkers({ salons, focusedSalonId }: SalonDataMarkersPro
     if (toAdd.length > 0) clustererRef.current.addMarkers(toAdd);
   }, [salons, markerLib]);
 
-  // Auto-open InfoWindow when focusedSalonId changes
+  // Auto-open InfoWindow + highlight marker when focusedSalonId changes
+  const prevFocusedRef = useRef<number | null>(null);
   useEffect(() => {
+    // Restore previous focused marker to normal style
+    if (prevFocusedRef.current != null && prevFocusedRef.current !== focusedSalonId) {
+      const prevSalon = salonsById.current.get(prevFocusedRef.current);
+      const prevMarker = markersRef.current.get(prevFocusedRef.current);
+      if (prevSalon && prevMarker) {
+        const normalEl = buildMarkerElement(prevSalon, false);
+        normalEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setSelected(salonsById.current.get(prevFocusedRef.current!) || prevSalon);
+        });
+        prevMarker.content = normalEl;
+      }
+    }
+    prevFocusedRef.current = focusedSalonId ?? null;
+
     if (focusedSalonId == null) return;
     const salon = salonsById.current.get(focusedSalonId);
     if (salon) {
       setSelected(salon);
+      // Restyle marker to red + animated
+      const marker = markersRef.current.get(focusedSalonId);
+      if (marker) {
+        const focusedEl = buildMarkerElement(salon, true);
+        focusedEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setSelected(salonsById.current.get(focusedSalonId) || salon);
+        });
+        marker.content = focusedEl;
+        marker.zIndex = 9999;
+      }
     }
   }, [focusedSalonId]);
 
