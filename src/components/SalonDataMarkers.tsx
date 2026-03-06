@@ -174,7 +174,8 @@ export function SalonDataMarkers({ salons, focusedSalonId }: SalonDataMarkersPro
     for (const salon of salons) {
       if (markersRef.current.has(salon.id)) continue;
 
-      const el = buildMarkerElement(salon);
+      const isFocused = salon.id === focusedSalonId;
+      const el = buildMarkerElement(salon, isFocused);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         setSelected(salonsById.current.get(salon.id) || salon);
@@ -183,14 +184,19 @@ export function SalonDataMarkers({ salons, focusedSalonId }: SalonDataMarkersPro
       const marker = new markerLib.AdvancedMarkerElement({
         position: { lat: salon.lat, lng: salon.lng },
         content: el,
-        zIndex: 200,
+        zIndex: isFocused ? 9999 : 200,
       });
 
       markersRef.current.set(salon.id, marker);
       toAdd.push(marker);
+
+      // Auto-open InfoWindow for focused salon that just appeared
+      if (isFocused) {
+        setSelected(salon);
+      }
     }
     if (toAdd.length > 0) clustererRef.current.addMarkers(toAdd);
-  }, [salons, markerLib]);
+  }, [salons, markerLib, focusedSalonId]);
 
   // Auto-open InfoWindow + highlight marker when focusedSalonId changes
   const prevFocusedRef = useRef<number | null>(null);
