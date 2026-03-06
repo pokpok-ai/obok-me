@@ -1,6 +1,6 @@
 "use client";
 
-import { AddressSearch } from "./AddressSearch";
+import { SalonSearch } from "./SalonSearch";
 
 export interface SalonFilters {
   categoryName: string | null;
@@ -68,8 +68,8 @@ export function SalonFilterBar({
         Promocje
       </button>
 
-      {/* Address search */}
-      <AddressSearch onSelect={onPlaceSelect} />
+      {/* Salon + address search */}
+      <SalonSearch onSelect={onPlaceSelect} />
 
       {/* Count + loading */}
       <div className="ml-auto flex items-center gap-2">
