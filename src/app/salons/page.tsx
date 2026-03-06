@@ -9,6 +9,7 @@ import type { SalonFilters } from "@/components/SalonFilterBar";
 import { LocateMe } from "@/components/LocateMe";
 import { useSalons } from "@/hooks/useSalons";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PageSwitch } from "@/components/PageSwitch";
 import type { ViewBounds } from "@/types";
 
 export default function SalonsPage() {
@@ -55,6 +56,7 @@ export default function SalonsPage() {
   return (
     <APIProvider apiKey={apiKey} version="weekly">
       <main className="h-screen w-screen relative overflow-hidden">
+        <PageSwitch active="salons" />
         <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
           <SalonDataMarkers salons={salons} />
         </MapContainer>

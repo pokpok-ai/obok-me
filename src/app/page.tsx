@@ -16,6 +16,7 @@ import { useInsights } from "@/hooks/useInsights";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useExternalData } from "@/hooks/useExternalData";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PageSwitch } from "@/components/PageSwitch";
 import type { ViewBounds, Filters, Transaction } from "@/types";
 
 export default function HomePage() {
@@ -156,6 +157,7 @@ export default function HomePage() {
   return (
     <APIProvider apiKey={apiKey} version="weekly">
     <main className="h-screen w-screen relative overflow-hidden">
+      <PageSwitch active="realestate" />
       <FilterBar
         filters={filters}
         stats={stats}

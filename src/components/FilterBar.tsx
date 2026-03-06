@@ -55,7 +55,7 @@ export function FilterBar({
   onPlaceSelect,
 }: FilterBarProps) {
   return (
-    <div className="absolute top-4 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
+    <div className="absolute top-16 left-4 right-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 flex gap-3 items-center flex-wrap">
       <span className="text-sm font-medium text-gray-700">Ceny transakcyjne</span>
 
       {/* Function type filter (apartment sub-types) */}
