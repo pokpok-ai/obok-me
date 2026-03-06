@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
 
 interface AddressSearchProps {
-  onSelect: (position: { lat: number; lng: number }, address?: string) => void;
+  onSelect: (position: { lat: number; lng: number }, address?: string, placeId?: string) => void;
 }
 
 const WARSAW_BOUNDS = {
@@ -104,7 +104,7 @@ export function AddressSearch({ onSelect }: AddressSearchProps) {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
           const addr = prediction.description || prediction.structured_formatting.main_text;
-          onSelect({ lat, lng }, addr);
+          onSelect({ lat, lng }, addr, prediction.place_id);
           setQuery(prediction.structured_formatting.main_text);
           setOpen(false);
           setPredictions([]);

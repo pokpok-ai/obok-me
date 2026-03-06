@@ -6,9 +6,10 @@ import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 interface SearchPinProps {
   lat: number;
   lng: number;
+  placeId?: string;
 }
 
-export function SearchPin({ lat, lng }: SearchPinProps) {
+export function SearchPin({ lat, lng, placeId }: SearchPinProps) {
   const map = useMap();
   const circleRef = useRef<google.maps.Circle | null>(null);
 
@@ -36,6 +37,35 @@ export function SearchPin({ lat, lng }: SearchPinProps) {
       circleRef.current = null;
     };
   }, [map, lat, lng]);
+
+  // Highlight the building polygon via FeatureLayer
+  useEffect(() => {
+    if (!map || !placeId) return;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const featureLayer = (map as any).getFeatureLayer("BUILDING");
+      if (!featureLayer) return;
+
+      featureLayer.style = (params: { feature: { placeId: string } }) => {
+        if (params.feature.placeId === placeId) {
+          return {
+            fillColor: "#ef4444",
+            fillOpacity: 0.5,
+            strokeColor: "#dc2626",
+            strokeWeight: 3,
+          };
+        }
+        return null;
+      };
+
+      return () => {
+        featureLayer.style = null;
+      };
+    } catch {
+      // FeatureLayer not available for this map ID — silently ignore
+    }
+  }, [map, placeId]);
 
   return (
     <AdvancedMarker position={{ lat, lng }} zIndex={9999}>

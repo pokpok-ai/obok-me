@@ -39,6 +39,7 @@ export default function HomePage() {
     lat: number;
     lng: number;
     address: string;
+    placeId?: string;
   } | null>(null);
 
   const stableFilters = useMemo(
@@ -117,10 +118,10 @@ export default function HomePage() {
   );
 
   const handlePlaceSelect = useCallback(
-    (position: { lat: number; lng: number }, address?: string) => {
+    (position: { lat: number; lng: number }, address?: string, placeId?: string) => {
       setMapCenter(position);
       setMapZoom(16);
-      setPriceEstimate({ ...position, address: address || `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}` });
+      setPriceEstimate({ ...position, address: address || `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`, placeId });
     },
     []
   );
@@ -174,7 +175,7 @@ export default function HomePage() {
         )}
         {heatmapEnabled && <HeatmapLayer points={heatmapPoints} />}
         <SalonMarkers />
-        {priceEstimate && <SearchPin lat={priceEstimate.lat} lng={priceEstimate.lng} />}
+        {priceEstimate && <SearchPin lat={priceEstimate.lat} lng={priceEstimate.lng} placeId={priceEstimate.placeId} />}
       </MapContainer>
       <LocateMe onLocate={handleLocate} />
       <button

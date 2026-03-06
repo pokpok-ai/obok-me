@@ -17,7 +17,7 @@ export default function SalonsPage() {
   const [bounds, setBounds] = useState<ViewBounds | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [mapZoom, setMapZoom] = useState<number | null>(null);
-  const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchedLocation, setSearchedLocation] = useState<{ lat: number; lng: number; placeId?: string } | null>(null);
   const [filters, setFilters] = useState<SalonFilters>({
     categoryName: null,
     promoOnly: false,
@@ -46,10 +46,10 @@ export default function SalonsPage() {
   }, []);
 
   const handlePlaceSelect = useCallback(
-    (position: { lat: number; lng: number }) => {
+    (position: { lat: number; lng: number }, _address?: string, placeId?: string) => {
       setMapCenter(position);
       setMapZoom(16);
-      setSearchedLocation(position);
+      setSearchedLocation({ ...position, placeId });
     },
     []
   );
@@ -62,7 +62,7 @@ export default function SalonsPage() {
         <PageSwitch active="salons" />
         <MapContainer onBoundsChanged={handleBoundsChanged} center={mapCenter} zoom={mapZoom}>
           <SalonDataMarkers salons={salons} />
-          {searchedLocation && <SearchPin lat={searchedLocation.lat} lng={searchedLocation.lng} />}
+          {searchedLocation && <SearchPin lat={searchedLocation.lat} lng={searchedLocation.lng} placeId={searchedLocation.placeId} />}
         </MapContainer>
         <SalonFilterBar
           filters={filters}
