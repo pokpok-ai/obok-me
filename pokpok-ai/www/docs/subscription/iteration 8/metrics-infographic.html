@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokPok Score — The Physics of Product Momentum</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0b0b0f;
+    --surface: #141418;
+    --surface-2: #1c1c22;
+    --border: #2a2a32;
+    --text: #e8e6e3;
+    --dim: #6b6b78;
+    --muted: #44444f;
+    --fire: #ff4d00;
+    --fire-glow: rgba(255, 77, 0, 0.15);
+    --electric: #00d4ff;
+    --electric-glow: rgba(0, 212, 255, 0.1);
+    --lime: #a3e635;
+    --lime-glow: rgba(163, 230, 53, 0.1);
+    --warn: #fbbf24;
+    --purple: #a78bfa;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* ============================================
+     HEADER — PHYSICS LAB AESTHETIC
+     ============================================ */
+  .header {
+    text-align: center;
+    padding-bottom: 48px;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: var(--fire);
+    box-shadow: 0 0 20px var(--fire-glow);
+  }
+
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--fire);
+    margin-bottom: 16px;
+  }
+
+  .header h1 {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .header h1 .thin {
+    font-weight: 300;
+    color: var(--dim);
+  }
+
+  .header-sub {
+    font-size: 16px;
+    color: var(--dim);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .header-sub strong {
+    color: var(--electric);
+    font-weight: 600;
+  }
+
+  /* ============================================
+     PHYSICS EQUATION HERO
+     ============================================ */
+  .equation-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .equation-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fire), transparent);
+  }
+
+  .equation {
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .formula {
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .formula .var-speed { color: var(--electric); font-weight: 600; }
+  .formula .var-smooth { color: var(--lime); font-weight: 600; }
+  .formula .var-momentum { color: var(--fire); font-weight: 600; }
+  .formula .var-podium { color: var(--warn); font-weight: 600; }
+  .formula .op { color: var(--muted); font-weight: 400; }
+
+  .formula-legend {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .legend-item {
+    text-align: center;
+    padding: 12px;
+  }
+
+  .legend-item .legend-symbol {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .legend-item .legend-name {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 2px;
+  }
+
+  .legend-item .legend-weight {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ============================================
+     THE FOUR FILTERS — VERTICAL BREAKDOWN
+     ============================================ */
+  .filters-section {
+    margin-bottom: 56px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .filter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    min-height: 180px;
+  }
+
+  .filter-left {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .filter-left::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+  }
+
+  .filter-number {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    opacity: 0.15;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+  }
+
+  .filter-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .filter-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .filter-subtitle {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  .filter-right {
+    padding: 28px;
+  }
+
+  .filter-desc {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .filter-desc strong {
+    color: var(--text);
+  }
+
+  /* === SPEED VISUALIZATION === */
+  .speed-vis {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 60px;
+  }
+
+  .speed-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    transition: height 0.5s ease;
+  }
+
+  .speed-bar .speed-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .speed-bar .speed-val {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* === SMOOTHNESS VISUALIZATION === */
+  .smooth-vis {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .smooth-chart {
+    flex: 1;
+  }
+
+  .smooth-chart svg {
+    width: 100%;
+    height: 60px;
+  }
+
+  .smooth-verdict {
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .smooth-verdict .sv-pct {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .smooth-verdict .sv-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  /* === MOMENTUM VISUALIZATION === */
+  .momentum-vis {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .momentum-day {
+    flex: 1;
+    height: 40px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    position: relative;
+  }
+
+  .momentum-day .day-label {
+    position: absolute;
+    bottom: -16px;
+    font-size: 8px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* === PODIUM VISUALIZATION === */
+  .podium-vis {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    height: 80px;
+    position: relative;
+  }
+
+  .podium-zone {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .podium-fill {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px;
+  }
+
+  .podium-label {
+    position: absolute;
+    bottom: -18px;
+    font-size: 8px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .podium-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--warn);
+    z-index: 2;
+  }
+
+  .podium-line-label {
+    position: absolute;
+    right: 0;
+    top: -14px;
+    font-size: 9px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
+  /* Filter accent colors */
+  .filter-speed .filter-left::before { background: var(--electric); }
+  .filter-speed .filter-name { color: var(--electric); }
+
+  .filter-smooth .filter-left::before { background: var(--lime); }
+  .filter-smooth .filter-name { color: var(--lime); }
+
+  .filter-momentum .filter-left::before { background: var(--fire); }
+  .filter-momentum .filter-name { color: var(--fire); }
+
+  .filter-podium .filter-left::before { background: var(--warn); }
+  .filter-podium .filter-name { color: var(--warn); }
+
+  /* ============================================
+     LEADERBOARD — THE WEEKLY SPRINT
+     ============================================ */
+  .leaderboard {
+    margin-bottom: 56px;
+  }
+
+  .lb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lb-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .lb-period {
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 48px 1fr 100px 100px 100px 80px 80px;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .lb-row:hover { background: var(--surface); }
+
+  .lb-row.lb-head {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lb-row.lb-head:hover { background: none; }
+
+  .lb-rank {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dim);
+  }
+
+  .lb-rank.top3 { color: var(--fire); }
+
+  .lb-product {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .lb-product-name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .lb-product-cat {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .lb-score {
+    text-align: center;
+  }
+
+  .lb-score-val {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .lb-score-bar {
+    width: 60px;
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    margin: 4px auto 0;
+    overflow: hidden;
+  }
+
+  .lb-score-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  .lb-metric {
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .lb-metric .metric-val {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .lb-metric .metric-sub {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .lb-signal {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .signal-rocket { color: var(--fire); background: var(--fire-glow); }
+  .signal-rising { color: var(--lime); background: var(--lime-glow); }
+  .signal-cooling { color: var(--warn); background: rgba(251, 191, 36, 0.1); }
+  .signal-fading { color: var(--dim); background: rgba(107, 107, 120, 0.1); }
+
+  /* ============================================
+     PRODUCT DEEP DIVE — X-RAY
+     ============================================ */
+  .xray {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 48px;
+    overflow: hidden;
+  }
+
+  .xray-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .xray-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .xray-score-badge {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--fire);
+  }
+
+  .xray-body {
+    padding: 28px;
+  }
+
+  .xray-timeline {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .xray-day {
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .xray-day .xd-day {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .xray-day .xd-rank {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .xray-day .xd-delta {
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .xray-day.peak {
+    border-color: var(--fire);
+    background: var(--fire-glow);
+  }
+
+  .delta-up { color: var(--lime); }
+  .delta-down { color: var(--fire); }
+  .delta-flat { color: var(--muted); }
+
+  .xray-gauges {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .xray-gauge {
+    text-align: center;
+    padding: 16px 12px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .xray-gauge .xg-val {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .xray-gauge .xg-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .xray-gauge .xg-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .xray-gauge .xg-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  /* ============================================
+     SCORE DISTRIBUTION — HOW RARE IS 80+?
+     ============================================ */
+  .distribution {
+    margin-bottom: 56px;
+  }
+
+  .dist-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+    padding: 0;
+    margin-bottom: 8px;
+  }
+
+  .dist-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    position: relative;
+    min-height: 2px;
+    transition: opacity 0.2s;
+    cursor: default;
+  }
+
+  .dist-bar:hover { opacity: 0.8; }
+
+  .dist-bar .dist-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  .dist-bar:hover .dist-tip { display: block; }
+
+  .dist-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    padding: 0 2px;
+  }
+
+  .dist-annotations {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .dist-annotations strong {
+    color: var(--text);
+  }
+
+  /* ============================================
+     THE WHAT & WHY — BOTTOM SECTION
+     ============================================ */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .bottom-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+  }
+
+  .bottom-card h4 {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .vs-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .vs-row:last-child { border-bottom: none; }
+
+  .vs-icon {
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .vs-label {
+    flex: 1;
+    color: var(--dim);
+  }
+
+  .vs-them {
+    width: 100px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface-2);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .vs-us {
+    width: 100px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fire);
+    background: var(--fire-glow);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  /* Stat list */
+  .stat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-list-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .stat-list-val {
+    font-size: 28px;
+    font-weight: 800;
+    width: 80px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .stat-list-desc {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+
+  /* ============================================
+     FOOTER
+     ============================================ */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-brand {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+
+  .footer-brand .fire { color: var(--fire); }
+
+  .footer-right {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 768px) {
+    .filter-card { grid-template-columns: 1fr; }
+    .filter-left { border-right: none; border-bottom: 1px solid var(--border); }
+    .formula { font-size: 18px; }
+    .formula-legend { grid-template-columns: repeat(2, 1fr); }
+    .lb-row { grid-template-columns: 32px 1fr 60px 60px; font-size: 11px; }
+    .lb-row .lb-metric:nth-child(n+5) { display: none; }
+    .xray-timeline { grid-template-columns: repeat(4, 1fr); }
+    .xray-gauges { grid-template-columns: repeat(2, 1fr); }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ============================================
+       HEADER
+       ============================================ -->
+  <header class="header">
+    <div class="header-eyebrow">Weekly Sprint Intelligence</div>
+    <h1>The PokPok Score<br><span class="thin">Physics of Product Momentum</span></h1>
+    <p class="header-sub">
+      Others show you where a product <em>is</em>. We show you its <strong>velocity</strong> and <strong>acceleration</strong>.
+      A 0-100 score that separates rockets from flash-in-the-pan spikes.
+    </p>
+  </header>
+
+  <!-- ============================================
+       FORMULA HERO
+       ============================================ -->
+  <div class="equation-hero">
+    <div class="equation">The Engine</div>
+    <div class="formula mono">
+      <span class="var-speed">S</span>
+      <span class="op"> + </span>
+      <span class="var-smooth">R</span>
+      <span class="op"> + </span>
+      <span class="var-momentum">M</span>
+      <span class="op"> + </span>
+      <span class="var-podium">P</span>
+      <span class="op"> = </span>
+      <span style="color:var(--text); font-weight:800;">Score</span>
+      <span style="color:var(--dim); font-size:18px;"> /100</span>
+    </div>
+    <div class="formula-legend">
+      <div class="legend-item">
+        <div class="legend-symbol" style="color:var(--electric);">S</div>
+        <div class="legend-name">Growth Speed</div>
+        <div class="legend-weight">positions / day</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-symbol" style="color:var(--lime);">R</div>
+        <div class="legend-name">Smoothness</div>
+        <div class="legend-weight">B.S. Detector</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-symbol" style="color:var(--fire);">M</div>
+        <div class="legend-name">Momentum</div>
+        <div class="legend-weight">accelerating or cooling</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-symbol" style="color:var(--warn);">P</div>
+        <div class="legend-name">Podium Bonus</div>
+        <div class="legend-weight">Top 10 breakthrough</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       THE FOUR FILTERS — DEEP EXPLANATION
+       ============================================ -->
+  <div class="filters-section">
+    <div class="section-label">Four Filters. Seven Days. One Score.</div>
+
+    <!-- FILTER 1: SPEED -->
+    <div class="filter-card filter-speed">
+      <div class="filter-left">
+        <div class="filter-number mono">01</div>
+        <div class="filter-name">Growth Speed</div>
+        <div class="filter-subtitle">Positions per day</div>
+      </div>
+      <div class="filter-right">
+        <div class="filter-desc">
+          How fast is this product climbing the BSR ladder? We measure <strong>positions gained per 24 hours</strong>.
+          A product jumping <strong>+40 spots/day</strong> is a rocket. Moving <strong>+2 spots/day</strong>? Barely a pulse.
+        </div>
+        <div class="speed-vis">
+          <div class="speed-bar" style="height:12%; background:var(--border);">
+            <div class="speed-val" style="color:var(--muted);">+2</div>
+            <div class="speed-label">slow</div>
+          </div>
+          <div class="speed-bar" style="height:25%; background:var(--border);">
+            <div class="speed-val" style="color:var(--muted);">+8</div>
+            <div class="speed-label">tepid</div>
+          </div>
+          <div class="speed-bar" style="height:45%; background:rgba(0,212,255,0.3);">
+            <div class="speed-val" style="color:var(--electric);">+18</div>
+            <div class="speed-label">solid</div>
+          </div>
+          <div class="speed-bar" style="height:70%; background:rgba(0,212,255,0.5);">
+            <div class="speed-val" style="color:var(--electric);">+30</div>
+            <div class="speed-label">fast</div>
+          </div>
+          <div class="speed-bar" style="height:100%; background:var(--electric);">
+            <div class="speed-val" style="color:var(--electric);">+47</div>
+            <div class="speed-label">rocket</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER 2: SMOOTHNESS -->
+    <div class="filter-card filter-smooth">
+      <div class="filter-left">
+        <div class="filter-number mono">02</div>
+        <div class="filter-name">Smoothness</div>
+        <div class="filter-subtitle">The B.S. Detector</div>
+      </div>
+      <div class="filter-right">
+        <div class="filter-desc">
+          Is the climb a <strong>clean, straight line</strong> or a jagged mess? High smoothness (<strong>70%+</strong>) = organic, reliable demand.
+          Low smoothness = likely a temporary promo spike or manipulated ranking.
+        </div>
+        <div class="smooth-vis">
+          <div class="smooth-chart">
+            <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+              <!-- Jagged line (low smoothness) -->
+              <polyline points="0,55 15,40 25,50 40,20 50,45 65,15 75,35 90,30 100,55"
+                fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <!-- Clean line (high smoothness) -->
+              <polyline points="100,55 115,48 130,40 145,32 160,24 175,16 190,10 200,5"
+                fill="none" stroke="var(--lime)" stroke-width="2"/>
+              <!-- Labels -->
+              <text x="50" y="10" fill="var(--muted)" font-size="7" text-anchor="middle">Promo spike</text>
+              <text x="155" y="55" fill="var(--lime)" font-size="7" text-anchor="middle">Organic climb</text>
+            </svg>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div class="smooth-verdict">
+              <div class="sv-pct" style="color:var(--muted);">34%</div>
+              <div class="sv-label">Jagged</div>
+            </div>
+            <div class="smooth-verdict">
+              <div class="sv-pct" style="color:var(--lime);">89%</div>
+              <div class="sv-label">Clean</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER 3: MOMENTUM -->
+    <div class="filter-card filter-momentum">
+      <div class="filter-left">
+        <div class="filter-number mono">03</div>
+        <div class="filter-name">Momentum</div>
+        <div class="filter-subtitle">Thrust vs. Cooling</div>
+      </div>
+      <div class="filter-right">
+        <div class="filter-desc">
+          The most critical weekly metric. Is the climb <strong>accelerating</strong> (gaining speed) or <strong>cooling</strong> (peaking)?
+          If it shot up Monday but slowed by Thursday — momentum is dropping. We measure the <strong>second derivative</strong>.
+        </div>
+        <div class="momentum-vis">
+          <div class="momentum-day" style="background:rgba(255,77,0,0.15);"><span class="delta-up">+12</span><span class="day-label">Mon</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.25);"><span class="delta-up">+18</span><span class="day-label">Tue</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.5); color:var(--fire);"><span style="font-weight:800;">+24</span><span class="day-label">Wed</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.65); color:var(--fire);"><span style="font-weight:800;">+31</span><span class="day-label">Thu</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.5); color:var(--fire);"><span>+22</span><span class="day-label">Fri</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.3);"><span class="delta-down">+14</span><span class="day-label">Sat</span></div>
+          <div class="momentum-day" style="background:rgba(255,77,0,0.15);"><span class="delta-down">+8</span><span class="day-label">Sun</span></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:10px;">
+          <span style="color:var(--lime);">Accelerating phase</span>
+          <span style="color:var(--fire);">Peak</span>
+          <span style="color:var(--muted);">Cooling phase</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER 4: PODIUM -->
+    <div class="filter-card filter-podium">
+      <div class="filter-left">
+        <div class="filter-number mono">04</div>
+        <div class="filter-name">Podium Bonus</div>
+        <div class="filter-subtitle">Top 10 Breakthrough</div>
+      </div>
+      <div class="filter-right">
+        <div class="filter-desc">
+          Breaking into the <strong>Category Top 10</strong> is exponentially harder. The air gets thin. We give extra weight
+          to products that crack the ceiling and reach the <strong>"Outcome" zone</strong> — where rank translates directly to revenue.
+        </div>
+        <div class="podium-vis">
+          <div class="podium-line" style="bottom:75%;">
+            <div class="podium-line-label">Top 10 Line</div>
+          </div>
+          <div class="podium-zone"><div class="podium-fill" style="height:20px; background:var(--border);"><span class="podium-label">#50+</span></div></div>
+          <div class="podium-zone"><div class="podium-fill" style="height:30px; background:var(--border);"></div><span class="podium-label">#30</span></div>
+          <div class="podium-zone"><div class="podium-fill" style="height:40px; background:rgba(251,191,36,0.2);"></div><span class="podium-label">#20</span></div>
+          <div class="podium-zone"><div class="podium-fill" style="height:55px; background:rgba(251,191,36,0.3);"></div><span class="podium-label">#10</span></div>
+          <div class="podium-zone"><div class="podium-fill" style="height:65px; background:rgba(251,191,36,0.5); color:var(--warn);">+15</div><span class="podium-label">#5</span></div>
+          <div class="podium-zone"><div class="podium-fill" style="height:80px; background:var(--warn); color:var(--bg); font-weight:800;">+25</div><span class="podium-label">#1</span></div>
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-top:24px; text-align:center;">
+          Bonus points increase exponentially as rank approaches #1
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       WEEKLY LEADERBOARD
+       ============================================ -->
+  <div class="leaderboard">
+    <div class="lb-header">
+      <div class="lb-title">Weekly Sprint Leaderboard</div>
+      <div class="lb-period mono">Mar 1 – Mar 7, 2026</div>
+    </div>
+
+    <div class="lb-row lb-head">
+      <div>#</div>
+      <div>Product</div>
+      <div style="text-align:center;">Score</div>
+      <div style="text-align:center;">Speed</div>
+      <div style="text-align:center;">Smooth</div>
+      <div style="text-align:center;">Thrust</div>
+      <div style="text-align:center;">Signal</div>
+    </div>
+
+    <div id="leaderboard"></div>
+  </div>
+
+  <!-- ============================================
+       PRODUCT X-RAY (deep dive on #1)
+       ============================================ -->
+  <div class="xray">
+    <div class="xray-header">
+      <div>
+        <div style="font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Product X-Ray — #1 This Week</div>
+        <h3>ProGrip Resistance Bands Set</h3>
+        <div style="font-size:11px; color:var(--dim); margin-top:4px;">Sports & Outdoors > Exercise & Fitness > Resistance Bands</div>
+      </div>
+      <div class="xray-score-badge mono">91</div>
+    </div>
+    <div class="xray-body">
+      <div style="font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:12px;">7-Day BSR Trajectory</div>
+      <div class="xray-timeline">
+        <div class="xray-day">
+          <div class="xd-day">Mon</div>
+          <div class="xd-rank mono">#87</div>
+          <div class="xd-delta delta-flat">start</div>
+        </div>
+        <div class="xray-day">
+          <div class="xd-day">Tue</div>
+          <div class="xd-rank mono">#64</div>
+          <div class="xd-delta delta-up">+23</div>
+        </div>
+        <div class="xray-day">
+          <div class="xd-day">Wed</div>
+          <div class="xd-rank mono">#41</div>
+          <div class="xd-delta delta-up">+23</div>
+        </div>
+        <div class="xray-day">
+          <div class="xd-day">Thu</div>
+          <div class="xd-rank mono">#22</div>
+          <div class="xd-delta delta-up">+19</div>
+        </div>
+        <div class="xray-day">
+          <div class="xd-day">Fri</div>
+          <div class="xd-rank mono">#11</div>
+          <div class="xd-delta delta-up">+11</div>
+        </div>
+        <div class="xray-day peak">
+          <div class="xd-day">Sat</div>
+          <div class="xd-rank mono" style="color:var(--fire);">#6</div>
+          <div class="xd-delta delta-up">+5</div>
+        </div>
+        <div class="xray-day peak">
+          <div class="xd-day">Sun</div>
+          <div class="xd-rank mono" style="color:var(--fire);">#4</div>
+          <div class="xd-delta delta-up">+2</div>
+        </div>
+      </div>
+
+      <div class="xray-gauges">
+        <div class="xray-gauge">
+          <div class="xg-val" style="color:var(--electric);">+11.9</div>
+          <div class="xg-label">Positions/Day</div>
+          <div class="xg-bar"><div class="xg-fill" style="width:85%; background:var(--electric);"></div></div>
+        </div>
+        <div class="xray-gauge">
+          <div class="xg-val" style="color:var(--lime);">92%</div>
+          <div class="xg-label">Smoothness</div>
+          <div class="xg-bar"><div class="xg-fill" style="width:92%; background:var(--lime);"></div></div>
+        </div>
+        <div class="xray-gauge">
+          <div class="xg-val" style="color:var(--fire);">Cooling</div>
+          <div class="xg-label">Momentum</div>
+          <div class="xg-bar"><div class="xg-fill" style="width:60%; background:var(--fire);"></div></div>
+        </div>
+        <div class="xray-gauge">
+          <div class="xg-val" style="color:var(--warn);">+20</div>
+          <div class="xg-label">Podium Bonus</div>
+          <div class="xg-bar"><div class="xg-fill" style="width:80%; background:var(--warn);"></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding:16px; background:var(--surface-2); border-radius:8px; border-left:3px solid var(--fire);">
+        <div style="font-size:12px; color:var(--dim); line-height:1.7;">
+          <strong style="color:var(--text);">Analysis:</strong> Clean organic climb from #87 to #4 in 7 days. Smoothness 92% — no promo spikes.
+          Momentum is now <strong style="color:var(--fire);">cooling</strong> (gains decelerating from +23/day to +2/day).
+          Podium entry earned +20 bonus. Watch next week: if it holds Top 10, this is a real category winner.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SCORE DISTRIBUTION
+       ============================================ -->
+  <div class="distribution">
+    <div class="section-label">Score Distribution — This Week's Sprint (2,847 products tracked)</div>
+    <div class="dist-bars" id="distBars"></div>
+    <div class="dist-axis">
+      <span>0</span>
+      <span>20</span>
+      <span>40</span>
+      <span>60</span>
+      <span>80</span>
+      <span>100</span>
+    </div>
+    <div class="dist-annotations">
+      <div><strong style="color:var(--muted);">68%</strong> score below 30 — noise, not signal</div>
+      <div><strong style="color:var(--fire);">3.2%</strong> score above 70 — the real movers</div>
+      <div><strong style="color:var(--warn);">0.4%</strong> crack 90 — rockets</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       BOTTOM GRID: US vs THEM + KEY NUMBERS
+       ============================================ -->
+  <div class="bottom-grid">
+    <div class="bottom-card">
+      <h4>Best Seller Lists vs PokPok Score</h4>
+      <div class="vs-row">
+        <div class="vs-icon">~</div>
+        <div class="vs-label">What they measure</div>
+        <div class="vs-them">Position</div>
+        <div class="vs-us">Velocity</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-icon">~</div>
+        <div class="vs-label">Time dimension</div>
+        <div class="vs-them">Snapshot</div>
+        <div class="vs-us">7-day arc</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-icon">~</div>
+        <div class="vs-label">Promo spike detection</div>
+        <div class="vs-them">None</div>
+        <div class="vs-us">Smoothness</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-icon">~</div>
+        <div class="vs-label">Direction of travel</div>
+        <div class="vs-them">Unknown</div>
+        <div class="vs-us">Momentum</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-icon">~</div>
+        <div class="vs-label">Signal type</div>
+        <div class="vs-them">Lagging</div>
+        <div class="vs-us">Leading</div>
+      </div>
+    </div>
+
+    <div class="bottom-card">
+      <h4>This Week in Numbers</h4>
+      <div class="stat-list">
+        <div class="stat-list-item">
+          <div class="stat-list-val" style="color:var(--fire);">2,847</div>
+          <div class="stat-list-desc">Products tracked across<br>124 Amazon categories</div>
+        </div>
+        <div class="stat-list-item">
+          <div class="stat-list-val" style="color:var(--electric);">91</div>
+          <div class="stat-list-desc">Highest score this sprint<br>ProGrip Resistance Bands</div>
+        </div>
+        <div class="stat-list-item">
+          <div class="stat-list-val" style="color:var(--lime);">14</div>
+          <div class="stat-list-desc">Products hit Top 10<br>from outside Top 50</div>
+        </div>
+        <div class="stat-list-item">
+          <div class="stat-list-val" style="color:var(--warn);">38%</div>
+          <div class="stat-list-desc">Flash-in-pan rate<br>high speed + low smoothness</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       FOOTER
+       ============================================ -->
+  <footer class="footer">
+    <div>
+      <div class="footer-brand">pok<span class="fire">pok</span>.ai</div>
+    </div>
+    <div class="footer-right">
+      Weekly Sprint Intelligence<br>
+      Amazon BSR Tracking &middot; Physics-Based Scoring<br>
+      Data refreshed every 24h
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // === LEADERBOARD DATA ===
+  const products = [
+    { rank:1, name:'ProGrip Resistance Bands Set', cat:'Sports & Fitness', score:91, speed:'+11.9/d', smooth:'92%', thrust:'Cooling', signal:'rocket' },
+    { rank:2, name:'NovaBrew Pour-Over Kit', cat:'Kitchen & Dining', score:87, speed:'+9.4/d', smooth:'88%', thrust:'Peak', signal:'rocket' },
+    { rank:3, name:'LumiPad Drawing Tablet A4', cat:'Arts & Crafts', score:84, speed:'+14.2/d', smooth:'71%', thrust:'Accel.', signal:'rocket' },
+    { rank:4, name:'CleanAir HEPA Filter (2-Pack)', cat:'Home & Kitchen', score:78, speed:'+7.8/d', smooth:'94%', thrust:'Steady', signal:'rising' },
+    { rank:5, name:'ZenFlex Yoga Mat 6mm', cat:'Sports & Fitness', score:74, speed:'+6.1/d', smooth:'85%', thrust:'Cooling', signal:'rising' },
+    { rank:6, name:'TechShield Privacy Screen 15"', cat:'Computer Accessories', score:71, speed:'+8.7/d', smooth:'62%', thrust:'Peak', signal:'rising' },
+    { rank:7, name:'SonicBrush Electric Toothbrush', cat:'Health & Personal Care', score:65, speed:'+5.3/d', smooth:'78%', thrust:'Cooling', signal:'cooling' },
+    { rank:8, name:'FrostGuard Car Windshield Cover', cat:'Automotive', score:58, speed:'+4.1/d', smooth:'81%', thrust:'Flat', signal:'cooling' },
+    { rank:9, name:'PetJoy Interactive Cat Toy', cat:'Pet Supplies', score:52, speed:'+3.8/d', smooth:'44%', thrust:'Fading', signal:'fading' },
+    { rank:10, name:'AquaPure Water Bottle 32oz', cat:'Sports & Outdoors', score:48, speed:'+2.9/d', smooth:'39%', thrust:'Fading', signal:'fading' },
+  ];
+
+  const lb = document.getElementById('leaderboard');
+  products.forEach(p => {
+    const scoreColor = p.score >= 80 ? 'var(--fire)' : p.score >= 60 ? 'var(--lime)' : p.score >= 40 ? 'var(--warn)' : 'var(--dim)';
+    const signalClass = `signal-${p.signal}`;
+    const signalLabel = p.signal === 'rocket' ? 'Rocket' : p.signal === 'rising' ? 'Rising' : p.signal === 'cooling' ? 'Cooling' : 'Fading';
+
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.innerHTML = `
+      <div class="lb-rank ${p.rank <= 3 ? 'top3' : ''} mono">${p.rank}</div>
+      <div class="lb-product">
+        <div class="lb-product-name">${p.name}</div>
+        <div class="lb-product-cat">${p.cat}</div>
+      </div>
+      <div class="lb-score">
+        <div class="lb-score-val mono" style="color:${scoreColor};">${p.score}</div>
+        <div class="lb-score-bar"><div class="lb-score-fill" style="width:${p.score}%; background:${scoreColor};"></div></div>
+      </div>
+      <div class="lb-metric">
+        <div class="metric-val mono" style="color:var(--electric);">${p.speed}</div>
+        <div class="metric-sub">speed</div>
+      </div>
+      <div class="lb-metric">
+        <div class="metric-val mono" style="color:var(--lime);">${p.smooth}</div>
+        <div class="metric-sub">smooth</div>
+      </div>
+      <div class="lb-metric">
+        <div class="metric-val" style="color:${p.thrust === 'Accel.' ? 'var(--fire)' : p.thrust === 'Peak' ? 'var(--warn)' : 'var(--dim)'};">${p.thrust}</div>
+        <div class="metric-sub">thrust</div>
+      </div>
+      <div class="lb-signal"><span class="${signalClass}">${signalLabel}</span></div>
+    `;
+    lb.appendChild(row);
+  });
+
+  // === SCORE DISTRIBUTION ===
+  const distData = [
+    180, 220, 310, 380, 420, 390, 280, 195, 140, 92,
+    68, 42, 35, 28, 18, 14, 10, 8, 6, 4, 3, 2, 1, 1
+  ];
+
+  const maxDist = Math.max(...distData);
+  const distBars = document.getElementById('distBars');
+
+  distData.forEach((count, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'dist-bar';
+    const pct = (count / maxDist * 100).toFixed(0);
+    const scoreRange = `${Math.round(i * 100/distData.length)}-${Math.round((i+1) * 100/distData.length)}`;
+
+    let color;
+    const scoreVal = i * 100 / distData.length;
+    if (scoreVal >= 80) color = 'var(--fire)';
+    else if (scoreVal >= 60) color = 'var(--lime)';
+    else if (scoreVal >= 40) color = 'var(--warn)';
+    else color = 'var(--border)';
+
+    bar.style.height = `${pct}%`;
+    bar.style.background = color;
+    bar.innerHTML = `<div class="dist-tip mono">${scoreRange}: ${count} products</div>`;
+    distBars.appendChild(bar);
+  });
+</script>
+
+</body>
+</html>
