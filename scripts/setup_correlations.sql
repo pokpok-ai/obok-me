@@ -32,6 +32,7 @@ RETURNS TABLE (
   market_secondary_avg NUMERIC
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM') AS month,
@@ -40,7 +41,7 @@ AS $$
     COUNT(*)::BIGINT,
     ROUND(AVG(CASE WHEN t.market_type = 'primary' THEN t.price_per_sqm END)::NUMERIC, 0),
     ROUND(AVG(CASE WHEN t.market_type = 'secondary' THEN t.price_per_sqm END)::NUMERIC, 0)
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -74,13 +75,14 @@ RETURNS TABLE (
   transaction_count BIGINT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.floor,
     ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
     ROUND((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.price_per_sqm))::NUMERIC, 0),
     COUNT(*)::BIGINT
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -116,6 +118,7 @@ RETURNS TABLE (
   transaction_count BIGINT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.rooms,
@@ -123,7 +126,7 @@ AS $$
     ROUND(AVG(t.price)::NUMERIC, 0),
     ROUND(AVG(t.area_sqm)::NUMERIC, 1),
     COUNT(*)::BIGINT
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -159,6 +162,7 @@ RETURNS TABLE (
   transaction_count BIGINT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     CASE
@@ -178,7 +182,7 @@ AS $$
     ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
     ROUND(AVG(t.price)::NUMERIC, 0),
     COUNT(*)::BIGINT
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -210,13 +214,14 @@ RETURNS TABLE (
   avg_price NUMERIC
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     TO_CHAR(DATE_TRUNC('month', t.transaction_date), 'YYYY-MM') AS month,
     COUNT(*)::BIGINT,
     ROUND(SUM(t.price)::NUMERIC, 0),
     ROUND(AVG(t.price)::NUMERIC, 0)
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -247,6 +252,7 @@ RETURNS TABLE (
   transaction_count BIGINT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   SELECT
     t.buyer_type,
@@ -254,7 +260,7 @@ AS $$
     ROUND(AVG(t.price_per_sqm)::NUMERIC, 0),
     ROUND(AVG(t.price)::NUMERIC, 0),
     COUNT(*)::BIGINT
-  FROM transactions t
+  FROM public.transactions t
   WHERE t.lat BETWEEN min_lat AND max_lat
     AND t.lng BETWEEN min_lng AND max_lng
     AND t.property_type = 'apartment'
@@ -288,6 +294,7 @@ RETURNS TABLE (
   previous_count BIGINT
 )
 LANGUAGE SQL STABLE
+SET search_path = ''
 AS $$
   WITH bounds AS (
     SELECT
@@ -300,7 +307,7 @@ AS $$
     SELECT
       ROUND(AVG(t.price_per_sqm)::NUMERIC, 0) AS avg_ppsm,
       COUNT(*)::BIGINT AS cnt
-    FROM transactions t, bounds b
+    FROM public.transactions t, bounds b
     WHERE t.lat BETWEEN min_lat AND max_lat
       AND t.lng BETWEEN min_lng AND max_lng
       AND t.property_type = 'apartment'
@@ -312,7 +319,7 @@ AS $$
     SELECT
       ROUND(AVG(t.price_per_sqm)::NUMERIC, 0) AS avg_ppsm,
       COUNT(*)::BIGINT AS cnt
-    FROM transactions t, bounds b
+    FROM public.transactions t, bounds b
     WHERE t.lat BETWEEN min_lat AND max_lat
       AND t.lng BETWEEN min_lng AND max_lng
       AND t.property_type = 'apartment'
